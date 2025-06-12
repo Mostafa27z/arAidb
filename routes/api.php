@@ -19,9 +19,55 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\StudentSubmissionController;
+use App\Http\Controllers\Api\ClubController;
+use App\Http\Controllers\Api\ClubMemberController;
+use App\Http\Controllers\Api\ClubChatMessageController;
 Route::get('/', function () {
     return response()->json(['message' => 'Welcome to API'], 200);
+});
+
+
+Route::prefix('clubs')->group(function () {
+    // Chat Messages for a specific club
+    Route::get('/{clubId}/messages', [ClubChatMessageController::class, 'index']); // Get all messages
+    Route::post('/messages', [ClubChatMessageController::class, 'store']);          // Send message
+    Route::get('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'show']); // Get single message
+    Route::delete('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'destroy']); // Delete message
+    // Clubs routes
+    Route::get('/', [ClubController::class, 'index']); // Get all clubs
+    Route::post('/', [ClubController::class, 'store']); // Create club
+    Route::get('/{club}', [ClubController::class, 'show']); // Get club details
+    Route::put('/{club}', [ClubController::class, 'update']); // Update club
+    Route::delete('/{club}', [ClubController::class, 'destroy']); // Delete club
+
+    // Club Members routes
+    Route::prefix('members')->group(function () {
+        Route::get('/', [ClubMemberController::class, 'index']); // Get all club members
+        Route::post('/', [ClubMemberController::class, 'store']); // Add member
+        Route::get('/{clubMember}', [ClubMemberController::class, 'show']); // Get member details
+        Route::delete('/{clubMember}', [ClubMemberController::class, 'destroy']); // Remove member
+    });
+});
+
+
+Route::prefix('submissions')->group(function () {
+    Route::post('/check', [StudentSubmissionController::class, 'checkSubmissionStatus']);
+    Route::get('/', [StudentSubmissionController::class, 'index']);         // Get all submissions
+    Route::post('/', [StudentSubmissionController::class, 'store']);        // Create new submission
+    Route::get('/{submission}', [StudentSubmissionController::class, 'show']);  // Get single submission
+    Route::put('/{submission}', [StudentSubmissionController::class, 'update']); // Update submission
+    Route::delete('/{submission}', [StudentSubmissionController::class, 'destroy']); // Delete submission
+
+    // Extra useful routes 
+
+    // Get submissions by student ID
+    Route::get('/student/{student}', [StudentSubmissionController::class, 'getSubmissionsByStudent']);
+
+    // Get submissions by assignment ID
+    Route::get('/assignment/{assignment}', [StudentSubmissionController::class, 'getSubmissionsByAssignment']);
+    Route::post('/submissions/check', [StudentSubmissionController::class, 'checkSubmissionStatus']);
+
 });
 
 Route::post('/register', [AuthController::class, 'register']);

@@ -7,13 +7,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class ClubResource extends JsonResource
 {
-    public function toArray(Request $request): array
-    {
-        return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'description' => $this->description,
-            'created_at' => $this->created_at->toDateTimeString(),
-        ];
-    }
+    public function toArray($request)
+{
+    return [
+        'id' => $this->id,
+        'name' => $this->name,
+        'description' => $this->description,
+        'members_count' => $this->members_count, // هنا أهم سطر
+        'created_at' => $this->created_at,
+    ];
+}
+
 }

@@ -191,43 +191,79 @@ class AssignmentController extends Controller
     /**
      * Get all assignments for a student (from enrolled courses)
      */
-    public function studentAssignments(Student $student)
-    {
-        // Get all courses the student is enrolled in
-        $courseIds = $student->enrollments->pluck('course_id');
+    public function studentAssignments(Student $student) 
+{ 
+    // Get all courses the student is enrolled in 
+    $courseIds = $student->enrollments->pluck('course_id'); 
+ 
+    // Get all lessons that belong to these courses
+    $lessonIds = \App\Models\Lesson::whereIn('course_id', $courseIds)->pluck('id');
+ 
+    // Get assignments from those lessons
+    $assignments = Assignment::whereIn('lesson_id', $lessonIds)
+        ->with(['lesson.course']) 
+        ->paginate(10); 
+ 
+    // Add submission status for each assignment 
+    $assignmentsWithStatus = $assignments->map(function ($assignment) use ($student) { 
+        $submission = \App\Models\StudentSubmission::where('assignment_id', $assignment->id) 
+            ->where('student_id', $student->id) 
+            ->first(); 
+ 
+        $assignment->submission_status = $submission ? 'submitted' : 'not_submitted'; 
+        $assignment->submission_id = $submission ? $submission->id : null; 
+        $assignment->submitted_at = $submission ? $submission->created_at : null; 
+ 
+        return $assignment; 
+    }); 
+ 
+    return response()->json([ 
+        'status' => 200, 
+        'data' => AssignmentResource::collection($assignmentsWithStatus), 
+        'pagination' => [ 
+            'current_page' => $assignments->currentPage(), 
+            'last_page' => $assignments->lastPage(), 
+            'total' => $assignments->total(), 
+        ] 
+    ]); 
+}
 
-        // Get all published assignments from those courses
-        $assignments = Assignment::whereIn('course_id', $courseIds)
-            ->where('status', 'published')
-            ->with(['course', 'teacher.user'])
-            ->paginate(10);
+// public function studentAssignments(Student $student) 
+// {
+//     // Get all courses the student is enrolled in
+//     $courseIds = $student->enrollments->pluck('course_id');
 
-        // Add submission status for each assignment
-        $assignmentsWithStatus = AssignmentResource::collection($assignments)
-            ->map(function ($assignment) use ($student) {
-                $submission = StudentSubmission::where('assignment_id', $assignment->id)
-                    ->where('student_id', $student->id)
-                    ->first();
+//     // Get all lessons for these courses
+//     $lessonIds = \App\Models\Lesson::whereIn('course_id', $courseIds)->pluck('id');
 
-                $assignment->additional([
-                    'submission_status' => $submission ? $submission->status : 'not_submitted',
-                    'submission_id' => $submission ? $submission->id : null,
-                    'submitted_at' => $submission ? $submission->created_at : null,
-                ]);
+//     // Get all assignments related to these lessons
+//     $assignments = Assignment::whereIn('lesson_id', $lessonIds)
+//         ->with(['lesson.course', 'lesson.course.teacher.user']) // load relationships properly
+//         ->paginate(10);
 
-                return $assignment;
-            });
+//     // Map submissions to assignments
+//     $assignmentsWithStatus = $assignments->map(function ($assignment) use ($student) {
+//         $submission = \App\Models\StudentSubmission::where('assignment_id', $assignment->id)
+//             ->where('student_id', $student->id)
+//             ->first();
 
-        return response()->json([
-            'status' => 200,
-            'data' => $assignmentsWithStatus,
-            'pagination' => [
-                'current_page' => $assignments->currentPage(),
-                'last_page' => $assignments->lastPage(),
-                'total' => $assignments->total(),
-            ]
-        ]);
-    }
+//         $assignment->submission_status = $submission ? $submission->status : 'not_submitted';
+//         $assignment->submission_id = $submission ? $submission->id : null;
+//         $assignment->submitted_at = $submission ? $submission->created_at : null;
+
+//         return $assignment;
+//     });
+
+//     return response()->json([
+//         'status' => 200,
+//         'data' => AssignmentResource::collection($assignmentsWithStatus),
+//         'pagination' => [
+//             'current_page' => $assignments->currentPage(),
+//             'last_page' => $assignments->lastPage(),
+//             'total' => $assignments->total(),
+//         ]
+//     ]);
+// }
 
     /**
      * Publish a draft assignment

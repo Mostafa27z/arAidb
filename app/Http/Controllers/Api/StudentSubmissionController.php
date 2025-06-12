@@ -235,4 +235,47 @@ class StudentSubmissionController extends Controller
             ]
         ]);
     }
+    public function getSubmissionsByStudent(Student $student)
+    {
+        $submissions = StudentSubmission::where('student_id', $student->id)
+                        ->with('assignment')
+                        ->get();
+
+        return response()->json(['status' => 200, 'data' => $submissions]);
+    }
+    public function getSubmissionsByAssignment(Assignment $assignment)
+    {
+        $submissions = StudentSubmission::where('assignment_id', $assignment->id)
+                        ->with('student')
+                        ->get();
+
+        return response()->json(['status' => 200, 'data' => $submissions]);
+    }
+
+public function checkSubmissionStatus(Request $request)
+{
+    $data = $request->validate([
+        'student_id' => 'required|exists:students,id',
+        'assignment_id' => 'required|exists:assignments,id',
+    ]);
+
+    $submission = StudentSubmission::where('student_id', $data['student_id'])
+        ->where('assignment_id', $data['assignment_id'])
+        ->first();
+
+    if ($submission) {
+        return response()->json([
+            'status' => 200,
+            'submitted' => true,
+            'submission_id' => $submission->id,
+            'submitted_at' => $submission->created_at,
+        ]);
+    } else {
+        return response()->json([
+            'status' => 200,
+            'submitted' => false,
+        ]);
+    }
+}
+
 }

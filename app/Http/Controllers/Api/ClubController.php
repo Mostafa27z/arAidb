@@ -14,7 +14,7 @@ class ClubController extends Controller
      */
     public function index()
     {
-        $clubs = Club::latest()->paginate(10);
+        $clubs = Club::withCount('members')->latest()->paginate(10);
 
         return response()->json([
             'status' => 200,
@@ -26,6 +26,7 @@ class ClubController extends Controller
             ]
         ]);
     }
+
 
     /**
      * Store a new club.

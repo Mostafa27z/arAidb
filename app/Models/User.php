@@ -52,4 +52,21 @@ class User extends Authenticatable
     {
         return $this->hasOne(Teacher::class, 'user_id');
     }
+    protected static function booted(): void
+{
+    static::created(function (User $user) {
+        if ($user->role === 'student') {
+            \App\Models\Student::create([
+                'student_id' => $user->id,
+                'parent_id' => null, // Or assign default parent if needed
+                'grade_level' => null, // Or set a default value
+            ]);
+        }
+    });
+}
+public function student()
+{
+    return $this->hasOne(Student::class, 'student_id');
+}
+
 }
