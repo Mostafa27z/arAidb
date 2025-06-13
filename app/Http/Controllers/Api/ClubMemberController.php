@@ -12,20 +12,18 @@ class ClubMemberController extends Controller
     /**
      * Get all club members.
      */
-    public function index()
-    {
-        $clubMembers = ClubMember::latest()->paginate(10);
+    public function index(Request $request)
+{
+    $query = ClubMember::query();
 
-        return response()->json([
-            'status' => 200,
-            'data' => ClubMemberResource::collection($clubMembers),
-            'pagination' => [
-                'current_page' => $clubMembers->currentPage(),
-                'last_page' => $clubMembers->lastPage(),
-                'total' => $clubMembers->total(),
-            ]
-        ]);
+    if ($request->has('student_id')) {
+        $query->where('student_id', $request->student_id);
     }
+
+    $members = $query->get();
+
+    return response()->json(['data' => $members]);
+}
 
     /**
      * Store a new club member.

@@ -98,21 +98,40 @@ class TeacherAssignmentReviewController extends Controller
 
     public function getReviewsByStudentId($studentId)
     {
-        $reviews = TeacherAssignmentReview::where('student_id', $studentId)->get();
-        return response()->json($reviews);
+        $reviews = TeacherAssignmentReview::whereHas('submission', function ($query) use ($studentId) {
+        $query->where('student_id', $studentId);
+    })->with(['submission', 'teacher'])->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => TeacherAssignmentReviewResource::collection($reviews)
+    ]);
     }
 
     public function getReviewsByCourseId($courseId)
-    {
-        $reviews = TeacherAssignmentReview::where('course_id', $courseId)->get();
-        return response()->json($reviews);
-    }
+{
+    $reviews = TeacherAssignmentReview::whereHas('submission.assignment.course', function ($query) use ($courseId) {
+        $query->where('id', $courseId);
+    })->with(['submission', 'teacher'])->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => TeacherAssignmentReviewResource::collection($reviews)
+    ]);
+}
 
     public function getReviewsByAssignmentId($assignmentId)
-    {
-        $reviews = TeacherAssignmentReview::where('assignment_id', $assignmentId)->get();
-        return response()->json($reviews);
-    }
+{
+    $reviews = TeacherAssignmentReview::whereHas('submission.assignment', function ($query) use ($assignmentId) {
+        $query->where('id', $assignmentId);
+    })->with(['submission', 'teacher'])->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => TeacherAssignmentReviewResource::collection($reviews)
+    ]);
+}
+
 
     public function getReviewsBySubmissionId($submissionId)
     {

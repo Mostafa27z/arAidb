@@ -12,6 +12,17 @@ class QuestionController extends Controller
     /**
      * Display a listing of questions.
      */
+    public function getQuestionsByLessonId($lessonId)
+{
+    $questions = Question::where('lesson_id', $lessonId)->with('options')->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => $questions,
+    ]);
+}
+
+
     public function index()
     {
         $questions = Question::all();

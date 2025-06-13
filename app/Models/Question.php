@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\QuestionOption;
 
 class Question extends Model
 {
@@ -20,4 +21,9 @@ class Question extends Model
     {
         return $this->belongsTo(Lesson::class);
     }
+    public function options()
+    {
+        return $this->hasMany(QuestionOption::class);
+    }
+
 }

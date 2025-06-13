@@ -24,23 +24,35 @@ class CourseEnrollmentController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'course_id' => 'required|exists:courses,id'
-        ]);
+{
+    $request->validate([
+        'student_id' => 'required|exists:students,id',
+        'course_id' => 'required|exists:courses,id'
+    ]);
 
-        $enrollment = CourseEnrollment::create([
-            'student_id' => $request->student_id,
-            'course_id' => $request->course_id,
-            'enrolled_at' => now()
-        ]);
-
-        return response()->json([
-            'status' => 201,
-            'data' => new CourseEnrollmentResource($enrollment)
-        ], 201);
+    // تحقق اذا الطالب طلب التسجيل من قبل
+    $exists = CourseEnrollment::where('student_id', $request->student_id)
+                               ->where('course_id', $request->course_id)
+                               ->first();
+    if ($exists) {
+        return response()->json(['message' => 'Enrollment request already exists'], 422);
     }
+
+    $enrollment = CourseEnrollment::create([
+        'student_id' => $request->student_id,
+        'course_id' => $request->course_id,
+        'status' => 'pending',  // default pending
+    ]);
+
+    return response()->json([
+        'status' => 201,
+        'message' => 'Enrollment request submitted successfully',
+        'data' => new CourseEnrollmentResource($enrollment)
+    ], 201)->header('Access-Control-Allow-Origin', '*')
+           ->header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
+           ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');;
+}
+
 
     public function show(CourseEnrollment $enrollment)
     {
@@ -59,4 +71,18 @@ class CourseEnrollmentController extends Controller
             'message' => 'Enrollment deleted successfully'
         ]);
     }
+    public function getByStudent($student_id)
+    {
+        $enrollments = CourseEnrollment::with('course')
+            ->where('student_id', $student_id)->where('status', 'approved')
+            ->get();
+
+        return response()->json([
+            'status' => 200,
+            'data' => $enrollments
+        ])->header('Access-Control-Allow-Origin', '*')
+           ->header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PUT, DELETE')
+           ->header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    }
+
 }

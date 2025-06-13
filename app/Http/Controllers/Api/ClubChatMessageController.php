@@ -15,7 +15,8 @@ class ClubChatMessageController extends Controller
     public function index(Request $request, $clubId)
     {
         $messages = ClubChatMessage::where('club_id', $clubId)
-            ->latest()
+            ->latest()->with('sender')  // بنحمل بيانات اليوزر مع كل رسالة
+            ->orderBy('created_at', 'asc')
             ->paginate(10);
 
         return response()->json([

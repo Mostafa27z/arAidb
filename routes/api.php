@@ -23,52 +23,71 @@ use App\Http\Controllers\Api\StudentSubmissionController;
 use App\Http\Controllers\Api\ClubController;
 use App\Http\Controllers\Api\ClubMemberController;
 use App\Http\Controllers\Api\ClubChatMessageController;
+use App\Http\Controllers\Api\StudentAnswerController;
+use App\Http\Controllers\Api\CourseEnrollmentController;
 Route::get('/', function () {
     return response()->json(['message' => 'Welcome to API'], 200);
 });
 
 
-Route::prefix('clubs')->group(function () {
-    // Chat Messages for a specific club
-    Route::get('/{clubId}/messages', [ClubChatMessageController::class, 'index']); // Get all messages
-    Route::post('/messages', [ClubChatMessageController::class, 'store']);          // Send message
-    Route::get('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'show']); // Get single message
-    Route::delete('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'destroy']); // Delete message
-    // Clubs routes
-    Route::get('/', [ClubController::class, 'index']); // Get all clubs
-    Route::post('/', [ClubController::class, 'store']); // Create club
-    Route::get('/{club}', [ClubController::class, 'show']); // Get club details
-    Route::put('/{club}', [ClubController::class, 'update']); // Update club
-    Route::delete('/{club}', [ClubController::class, 'destroy']); // Delete club
+// Route::prefix('clubs')->group(function () {
+//     // Chat Messages for a specific club
+//     Route::get('/{clubId}/messages', [ClubChatMessageController::class, 'index']); // Get all messages
+//     Route::post('/messages', [ClubChatMessageController::class, 'store']);          // Send message
+//     Route::get('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'show']); // Get single message
+//     Route::delete('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'destroy']); // Delete message
+//     // Clubs routes
+//     Route::get('/', [ClubController::class, 'index']); // Get all clubs
+//     Route::post('/', [ClubController::class, 'store']); // Create club
+//     Route::get('/{club}', [ClubController::class, 'show']); // Get club details
+//     Route::put('/{club}', [ClubController::class, 'update']); // Update club
+//     Route::delete('/{club}', [ClubController::class, 'destroy']); // Delete club
 
-    // Club Members routes
+//     // Club Members routes
+//     Route::prefix('members')->group(function () {
+//         Route::get('/', [ClubMemberController::class, 'index']); // Get all club members
+//         Route::post('/', [ClubMemberController::class, 'store']); // Add member
+//         Route::get('/{clubMember}', [ClubMemberController::class, 'show']); // Get member details
+//         Route::delete('/{clubMember}', [ClubMemberController::class, 'destroy']); // Remove member
+//     });
+// });
+Route::prefix('clubs')->group(function () {
+
+    
+
+    // ضع members routes قبل أي route فيه {club}
     Route::prefix('members')->group(function () {
-        Route::get('/', [ClubMemberController::class, 'index']); // Get all club members
-        Route::post('/', [ClubMemberController::class, 'store']); // Add member
-        Route::get('/{clubMember}', [ClubMemberController::class, 'show']); // Get member details
-        Route::delete('/{clubMember}', [ClubMemberController::class, 'destroy']); // Remove member
+        Route::get('/', [ClubMemberController::class, 'index']);
+        Route::post('/', [ClubMemberController::class, 'store']);
+        Route::get('/{clubMember}', [ClubMemberController::class, 'show']);
+        Route::delete('/{clubMember}', [ClubMemberController::class, 'destroy']);
     });
+
+    // Chat routes بعد الكل
+    Route::get('/{clubId}/messages', [ClubChatMessageController::class, 'index']);
+    Route::post('/messages', [ClubChatMessageController::class, 'store']);
+    Route::get('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'show']);
+    Route::delete('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'destroy']);
+    
+Route::get('/', [ClubController::class, 'index']);
+    Route::post('/', [ClubController::class, 'store']);
+    Route::get('/{club}', [ClubController::class, 'show']);
+    Route::put('/{club}', [ClubController::class, 'update']);
+    Route::delete('/{club}', [ClubController::class, 'destroy']);
 });
+
 
 
 Route::prefix('submissions')->group(function () {
     Route::post('/check', [StudentSubmissionController::class, 'checkSubmissionStatus']);
-    Route::get('/', [StudentSubmissionController::class, 'index']);         // Get all submissions
-    Route::post('/', [StudentSubmissionController::class, 'store']);        // Create new submission
-    Route::get('/{submission}', [StudentSubmissionController::class, 'show']);  // Get single submission
-    Route::put('/{submission}', [StudentSubmissionController::class, 'update']); // Update submission
-    Route::delete('/{submission}', [StudentSubmissionController::class, 'destroy']); // Delete submission
-
-    // Extra useful routes 
-
-    // Get submissions by student ID
+    Route::get('/', [StudentSubmissionController::class, 'index']);
+    Route::post('/', [StudentSubmissionController::class, 'store']);  // create
+    Route::post('/{submission}', [StudentSubmissionController::class, 'update']); // ✅ important: post instead of put
+    Route::delete('/{submission}', [StudentSubmissionController::class, 'destroy']);
     Route::get('/student/{student}', [StudentSubmissionController::class, 'getSubmissionsByStudent']);
-
-    // Get submissions by assignment ID
     Route::get('/assignment/{assignment}', [StudentSubmissionController::class, 'getSubmissionsByAssignment']);
-    Route::post('/submissions/check', [StudentSubmissionController::class, 'checkSubmissionStatus']);
-
 });
+
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -109,10 +128,21 @@ Route::prefix('teachers')->group(function () {
     Route::get('/{teacher}/statistics', [TeacherController::class, 'statistics']);
     Route::post('/{teacher}/assign-course', [TeacherController::class, 'assignCourse']);
     Route::delete('/{teacher}/courses/{course}', [TeacherController::class, 'removeCourse']);
+    Route::put('/enrollments/{enrollment}/status', [CourseEnrollmentController::class, 'updateStatus']);
+
 });
 
 Route::apiResource('courses', CourseController::class);
 Route::get('/courses/{course}/lessons', [CourseController::class, 'lessons']);
+Route::prefix('enrollments')->group(function () {
+    Route::get('/', [CourseEnrollmentController::class, 'index']);
+    Route::post('/', [CourseEnrollmentController::class, 'store']);
+    Route::get('/{id}', [CourseEnrollmentController::class, 'show']);
+    Route::delete('/{id}', [CourseEnrollmentController::class, 'destroy']);
+
+    // لو عايز تجيب بالطالب (اللي انت عامل لها حالياً getEnrollmentsByStudent)
+    Route::get('/student/{student_id}', [CourseEnrollmentController::class, 'getByStudent']);
+});
 
 // Lesson Routes
 Route::prefix('lessons')->group(function () {
@@ -155,7 +185,7 @@ Route::prefix('assignments')->group(function () {
 });
 
 // AI Chat Log Routes
-Route::middleware('auth:sanctum')->group(function () {
+
     // Get all chat logs
     Route::get('/chat-logs', [AIChatLogController::class, 'index']);
 
@@ -174,7 +204,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Delete a specific chat log
     Route::delete('/chat-logs/{aiChatLog}', [AIChatLogController::class, 'destroy']);
-});
+
 
 // Teacher Assignment Review Routes
 Route::prefix('teacher-assignment-reviews')->group(function () {
@@ -206,6 +236,7 @@ Route::prefix('questions')->group(function () {
     Route::get('/by-assignment/{assignmentId}', [QuestionController::class, 'getQuestionsByAssignmentId']);
     Route::get('/by-student/{studentId}', [QuestionController::class, 'getQuestionsByStudentId']);
     Route::get('/by-teacher/{teacherId}', [QuestionController::class, 'getQuestionsByTeacherId']);
+    Route::get('/by-lesson/{lessonId}', [QuestionController::class, 'getQuestionsByLessonId']);
 });
 
 // Question Options Routes
@@ -221,6 +252,7 @@ Route::prefix('question-options')->group(function () {
     Route::get('/question/{questionId}/all', [QuestionOptionController::class, 'getOptionsByQuestionId']);
     Route::get('/question/{questionId}/correct', [QuestionOptionController::class, 'getCorrectOptionsByQuestionId']);
     Route::get('/correct/all', [QuestionOptionController::class, 'getAllCorrectOptions']);
+    
 });
 
 // Exam Routes
@@ -238,6 +270,7 @@ Route::prefix('exams')->group(function () {
     Route::get('/past/all', [ExamController::class, 'getPastExams']);
     Route::get('/today/all', [ExamController::class, 'getTodayExams']);
     Route::post('/date-range', [ExamController::class, 'getExamsByDateRange']);
+    
 });
 
 // Exam Results Routes
@@ -258,6 +291,13 @@ Route::prefix('exam-results')->group(function () {
     Route::get('/exam/{examId}/all', [ExamResultController::class, 'getResultsByExamId']);
     Route::get('/exam/{examId}/statistics', [ExamResultController::class, 'getExamStatistics']);
     Route::get('/exam/{examId}/top-performers', [ExamResultController::class, 'getTopPerformers']);
+});
+Route::prefix('student-answers')->group(function () {
+    Route::get('/', [StudentAnswerController::class, 'index']);
+    Route::post('/', [StudentAnswerController::class, 'store']);
+    Route::get('/{answer}', [StudentAnswerController::class, 'show']);
+    Route::put('/{answer}', [StudentAnswerController::class, 'update']);
+    Route::delete('/{answer}', [StudentAnswerController::class, 'destroy']);
 });
 
 // Parent-Teacher Conversations Routes

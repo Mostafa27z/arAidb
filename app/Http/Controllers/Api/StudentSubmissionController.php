@@ -36,66 +36,125 @@ class StudentSubmissionController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        // Validation
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'assignment_id' => 'required|exists:assignments,id',
-            'content' => 'required_without:file_path|string|nullable',
-            'file_path' => 'required_without:content|file|max:10240|nullable', // 10MB max
-            'notes' => 'nullable|string',
-            'status' => 'required|in:submitted,draft'
-        ]);
+    // public function store(Request $request)
+    // {
+    //     // Validation
+    //     $request->validate([
+    //         'student_id' => 'required|exists:students,id',
+    //         'assignment_id' => 'required|exists:assignments,id',
+    //         'submission_text' => 'required_without:file_path|string|nullable',
+    //         'file_path' => 'required_without:submission_text|file|max:10240|nullable', // 10MB max
+    //         // 'notes' => 'nullable|string',
+    //         // 'status' => 'required|in:submitted,draft'
+    //     ]);
 
-        // Check if assignment exists and is not past due date
-        $assignment = Assignment::findOrFail($request->assignment_id);
-        if (now() > $assignment->due_date) {
-            return response()->json([
-                'status' => 422,
-                'message' => 'Assignment submission deadline has passed'
-            ], 422);
-        }
+    //     // Check if assignment exists and is not past due date
+    //     $assignment = Assignment::findOrFail($request->assignment_id);
+    //     if (now() > $assignment->due_date) {
+    //         return response()->json([
+    //             'status' => 422,
+    //             'message' => 'Assignment submission deadline has passed'
+    //         ], 422);
+    //     }
 
-        // Check if student has already submitted this assignment
-        $existingSubmission = StudentSubmission::where('student_id', $request->student_id)
-            ->where('assignment_id', $request->assignment_id)
-            ->first();
+    //     // Check if student has already submitted this assignment
+    //     $existingSubmission = StudentSubmission::where('student_id', $request->student_id)
+    //         ->where('assignment_id', $request->assignment_id)
+    //         ->first();
 
-        if ($existingSubmission) {
-            return response()->json([
-                'status' => 422,
-                'message' => 'You have already submitted this assignment',
-                'data' => new StudentSubmissionResource($existingSubmission)
-            ], 422);
-        }
+    //     if ($existingSubmission) {
+    //         return response()->json([
+    //             'status' => 422,
+    //             'message' => 'You have already submitted this assignment',
+    //             'data' => new StudentSubmissionResource($existingSubmission)
+    //         ], 422);
+    //     }
 
-        // Handle file upload if present
-        $filePath = null;
-        if ($request->hasFile('file_path')) {
-            $filePath = $request->file('file_path')->store('submissions', 'public');
-        }
+    //     // Handle file upload if present
+    //     $filePath = null;
+    //     if ($request->hasFile('file_path')) {
+    //         $filePath = $request->file('file_path')->store('submissions', 'public');
+    //     }
 
-        // Create submission
-        $submission = StudentSubmission::create([
-            'student_id' => $request->student_id,
-            'assignment_id' => $request->assignment_id,
-            'content' => $request->content,
-            'file_path' => $filePath ? Storage::url($filePath) : null,
-            'notes' => $request->notes,
-            'status' => $request->status,
-            'submission_date' => now(),
-        ]);
+    //     // Create submission
+    //     $submission = StudentSubmission::create([
+    //         'student_id' => $request->student_id,
+    //         'assignment_id' => $request->assignment_id,
+    //         'submission_text' => $request->submission_text,
+    //         'file_path' => $filePath ? Storage::url($filePath) : null,
+    //         // 'notes' => $request->notes,
+    //         // 'status' => $request->status,
+    //         'submission_date' => now(),
+    //     ]);
 
-        // Load relationships
-        $submission->load(['student.user', 'assignment']);
+    //     // Load relationships
+    //     $submission->load(['student.user', 'assignment']);
 
-        return response()->json([
-            'status' => 201,
-            'message' => 'Assignment submitted successfully',
-            'data' => new StudentSubmissionResource($submission)
-        ], 201);
+    //     return response()->json([
+    //         'status' => 201,
+    //         'message' => 'Assignment submitted successfully',
+    //         'data' => new StudentSubmissionResource($submission)
+    //     ], 201);
+    // }
+public function store(Request $request)
+{
+    $request->validate([
+        'student_id' => 'required|exists:students,id',
+        'assignment_id' => 'required|exists:assignments,id',
+        'submission_text' => 'required_without:file_path|string|nullable',
+        'file_path' => 'required_without:submission_text|file|max:10240|nullable',
+    ]);
+
+    $assignment = Assignment::findOrFail($request->assignment_id);
+    if (now() > $assignment->due_date) {
+        return response()->json(['message' => 'Assignment submission deadline has passed'], 422);
     }
+
+    $existingSubmission = StudentSubmission::where('student_id', $request->student_id)
+        ->where('assignment_id', $request->assignment_id)
+        ->first();
+
+    if ($existingSubmission) {
+        return response()->json(['message' => 'You have already submitted this assignment'], 422);
+    }
+
+    $filePath = null;
+    if ($request->hasFile('file_path')) {
+        $filePath = $request->file('file_path')->store('submissions', 'public');
+    }
+
+    $submission = StudentSubmission::create([
+        'student_id' => $request->student_id,
+        'assignment_id' => $request->assignment_id,
+        'submission_text' => $request->submission_text,
+        'file_path' => $filePath ? Storage::url($filePath) : null,
+        'submission_date' => now(),
+    ]);
+
+    return response()->json(['message' => 'Assignment submitted successfully', 'data' => $submission], 201);
+}
+
+public function update(Request $request, StudentSubmission $submission)
+{
+    $request->validate([
+        'submission_text' => 'nullable|string',
+        'file_path' => 'sometimes|file|max:10240',
+    ]);
+
+    if ($request->hasFile('file_path')) {
+        if ($submission->file_path) {
+            $oldPath = str_replace('/storage/', '', $submission->file_path);
+            Storage::disk('public')->delete($oldPath);
+        }
+        $filePath = $request->file('file_path')->store('submissions', 'public');
+        $submission->file_path = Storage::url($filePath);
+    }
+
+    $submission->submission_text = $request->input('submission_text', $submission->submission_text);
+    $submission->save();
+
+    return response()->json(['message' => 'Submission updated successfully', 'data' => $submission], 200);
+}
 
     /**
      * Display the specified resource.
@@ -113,60 +172,37 @@ class StudentSubmissionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, StudentSubmission $studentSubmission)
-    {
-        // Check if submission can be updated (only if not yet reviewed)
-        if ($studentSubmission->reviews->count() > 0) {
-            return response()->json([
-                'status' => 422,
-                'message' => 'Cannot update submission after it has been reviewed'
-            ], 422);
-        }
+//    public function update(Request $request, StudentSubmission $studentSubmission)
+// {
+//     // Validation
+//     $request->validate([
+//         'submission_text' => 'nullable|string',
+//         'file_path' => 'sometimes|file|max:10240',
+//     ]);
 
-        // Check if assignment deadline has passed
-        if (now() > $studentSubmission->assignment->due_date) {
-            return response()->json([
-                'status' => 422,
-                'message' => 'Assignment submission deadline has passed'
-            ], 422);
-        }
+//     if ($request->hasFile('file_path')) {
+//         // حذف القديم لو وجد
+//         if ($studentSubmission->file_path) {
+//             $oldPath = str_replace('/storage/', '', $studentSubmission->file_path);
+//             Storage::disk('public')->delete($oldPath);
+//         }
 
-        // Validation
-        $request->validate([
-            'content' => 'required_without:file_path|string|nullable',
-            'file_path' => 'sometimes|file|max:10240|nullable', // 10MB max
-            'notes' => 'nullable|string',
-            'status' => 'sometimes|required|in:submitted,draft'
-        ]);
+//         $filePath = $request->file('file_path')->store('submissions', 'public');
+//         $studentSubmission->file_path = Storage::url($filePath);
+//     }
 
-        // Handle file upload if present
-        if ($request->hasFile('file_path')) {
-            // Delete old file if exists
-            if ($studentSubmission->file_path) {
-                $oldPath = str_replace('/storage/', '', $studentSubmission->file_path);
-                Storage::disk('public')->delete($oldPath);
-            }
+//     $studentSubmission->submission_text = $request->input('submission_text', $studentSubmission->submission_text);
+//     $studentSubmission->updated_at = now();
+//     $studentSubmission->save();
 
-            $filePath = $request->file('file_path')->store('submissions', 'public');
-            $studentSubmission->file_path = Storage::url($filePath);
-        }
+//     return response()->json([
+//         'status' => 200,
+//         'message' => 'Submission updated successfully',
+//         'data' => new StudentSubmissionResource($studentSubmission)
+//     ], 200);
+// }
 
-        // Update other fields
-        $studentSubmission->content = $request->input('content', $studentSubmission->content);
-        $studentSubmission->notes = $request->input('notes', $studentSubmission->notes);
-        $studentSubmission->status = $request->input('status', $studentSubmission->status);
-        $studentSubmission->updated_at = now();
-        $studentSubmission->save();
 
-        // Load relationships
-        $studentSubmission->load(['student.user', 'assignment']);
-
-        return response()->json([
-            'status' => 200,
-            'message' => 'Submission updated successfully',
-            'data' => new StudentSubmissionResource($studentSubmission)
-        ], 200);
-    }
 
     /**
      * Remove the specified resource from storage.
