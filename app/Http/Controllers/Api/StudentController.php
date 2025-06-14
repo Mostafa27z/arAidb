@@ -16,23 +16,36 @@ use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
+    
     /**
      * Display a listing of the resource.
      */
-    public function index()
-    {
-        $students = Student::paginate(10);
+    public function index(Request $request)
+{
+    $query = Student::with('user');
 
-        return response()->json([
-            'status' => 200,
-            'data' => StudentResource::collection($students),
-            'pagination' => [
-                'current_page' => $students->currentPage(),
-                'last_page' => $students->lastPage(),
-                'total' => $students->total(),
-            ]
-        ]);
+    // إضافة البحث
+    if ($request->has('search') && $request->search != '') {
+        $searchTerm = $request->search;
+
+        $query->whereHas('user', function($q) use ($searchTerm) {
+            $q->where('name', 'like', "%{$searchTerm}%")
+              ->orWhere('email', 'like', "%{$searchTerm}%");
+        });
     }
+
+    $students = $query->paginate(10);
+
+    return response()->json([
+        'status' => 200,
+        'data' => StudentResource::collection($students),
+        'pagination' => [
+            'current_page' => $students->currentPage(),
+            'last_page' => $students->lastPage(),
+            'total' => $students->total(),
+        ]
+    ], 200);
+}
 
     /**
      * Store a newly created resource in storage.
@@ -104,14 +117,33 @@ class StudentController extends Controller
      * Remove the specified resource from storage.
      */
     public function destroy(Student $student)
-    {
-        $student->delete();
+{
+    // 1. حذف عضويات النوادي
+    $student->clubMembers()->delete();
 
-        return response()->json([
-            'status' => 200,
-            'message' => 'The student was successfully deleted'
-        ], 200);
+    // 2. حذف الاشتراكات في الكورسات
+    $student->enrollments()->delete();
+
+    // 3. حذف تقدم الدروس
+    $student->progress()->delete();
+
+    // 4. حذف التسليمات (submissions)
+    $student->submissions()->delete();
+
+    // 5. حذف الطالب نفسه
+    $student->delete();
+
+    // 6. حذف اليوزر المرتبط بالطالب
+    if ($student->user) {
+        $student->user->delete();
     }
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'The student and corresponding user were successfully deleted'
+    ], 200);
+}
+
 
     /**
      * Get student profile with user data

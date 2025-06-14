@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\ClubMemberController;
 use App\Http\Controllers\Api\ClubChatMessageController;
 use App\Http\Controllers\Api\StudentAnswerController;
 use App\Http\Controllers\Api\CourseEnrollmentController;
+// use App\Http\Controllers\Api\CourseController;
 Route::get('/', function () {
     return response()->json(['message' => 'Welcome to API'], 200);
 });
@@ -86,6 +87,8 @@ Route::prefix('submissions')->group(function () {
     Route::delete('/{submission}', [StudentSubmissionController::class, 'destroy']);
     Route::get('/student/{student}', [StudentSubmissionController::class, 'getSubmissionsByStudent']);
     Route::get('/assignment/{assignment}', [StudentSubmissionController::class, 'getSubmissionsByAssignment']);
+    Route::get('/byteacher/{teacher}', [StudentSubmissionController::class, 'getSubmissionsByTeacher']);
+
 });
 
 
@@ -118,17 +121,21 @@ Route::prefix('students/{student}')->group(function () {
 
 // Teacher Routes
 Route::apiResource('teachers', TeacherController::class);
-
+Route::get('courses/teachers/{teacher}/courses', [CourseController::class, 'getCoursesByTeacher']);
 Route::prefix('teachers')->group(function () {
     // Additional Teacher Routes
     Route::get('/{teacher}/profile', [TeacherController::class, 'profile']);
-    Route::get('/{teacher}/courses', [TeacherController::class, 'courses']);
+    
+
     Route::get('/{teacher}/assignments', [TeacherController::class, 'assignments']);
     Route::get('/{teacher}/pending-reviews', [TeacherController::class, 'pendingReviews']);
     Route::get('/{teacher}/statistics', [TeacherController::class, 'statistics']);
     Route::post('/{teacher}/assign-course', [TeacherController::class, 'assignCourse']);
+    Route::get('/{teacher}/dashboard-summary', [TeacherController::class, 'dashboardSummary']);
     Route::delete('/{teacher}/courses/{course}', [TeacherController::class, 'removeCourse']);
     Route::put('/enrollments/{enrollment}/status', [CourseEnrollmentController::class, 'updateStatus']);
+    
+
 
 });
 
@@ -143,22 +150,26 @@ Route::prefix('enrollments')->group(function () {
     // لو عايز تجيب بالطالب (اللي انت عامل لها حالياً getEnrollmentsByStudent)
     Route::get('/student/{student_id}', [CourseEnrollmentController::class, 'getByStudent']);
 });
+Route::get('/enrollments/teacher/{teacher_id}', [CourseEnrollmentController::class, 'getEnrollmentsByTeacher']);
+Route::put('/enrollments/{enrollment}/status', [CourseEnrollmentController::class, 'updateStatus']);
 
 // Lesson Routes
-Route::prefix('lessons')->group(function () {
-    // Basic CRUD routes
-    Route::get('/', [LessonController::class, 'index']);
-    Route::post('/', [LessonController::class, 'store']);
-    Route::get('/{lesson}', [LessonController::class, 'show']);
-    Route::put('/{lesson}', [LessonController::class, 'update']);
-    Route::delete('/{lesson}', [LessonController::class, 'destroy']);
+Route::prefix('lessons')->group(function () { 
+    // Static or fixed routes FIRST
+    Route::get('/teacher/{teacherId}', [LessonController::class, 'getLessonsByTeacher']); 
+    Route::get('/course/{courseId}/all', [LessonController::class, 'getLessonsByCourseId']); 
+    Route::get('/latest/all', [LessonController::class, 'getLatestLessons']); 
+    Route::get('/{lesson}/next', [LessonController::class, 'getNextLesson']); 
+    Route::get('/{lesson}/previous', [LessonController::class, 'getPreviousLesson']); 
 
-    // Additional routes
-    Route::get('/course/{courseId}/all', [LessonController::class, 'getLessonsByCourseId']);
-    Route::get('/{lesson}/next', [LessonController::class, 'getNextLesson']);
-    Route::get('/{lesson}/previous', [LessonController::class, 'getPreviousLesson']);
-    Route::get('/latest/all', [LessonController::class, 'getLatestLessons']);
+    // Basic CRUD routes AFTER static routes
+    Route::get('/', [LessonController::class, 'index']); 
+    Route::post('/', [LessonController::class, 'store']); 
+    Route::get('/{lesson}', [LessonController::class, 'show']); 
+    Route::put('/{lesson}', [LessonController::class, 'update']); 
+    Route::delete('/{lesson}', [LessonController::class, 'destroy']); 
 });
+
 
 Route::apiResource('lesson-progress', LessonProgressController::class);
 
@@ -208,8 +219,10 @@ Route::prefix('assignments')->group(function () {
 
 // Teacher Assignment Review Routes
 Route::prefix('teacher-assignment-reviews')->group(function () {
+    Route::post('/store-or-update', [TeacherAssignmentReviewController::class, 'storeOrUpdate']);
+
     Route::get('/', [TeacherAssignmentReviewController::class, 'index']);
-    Route::post('/', [TeacherAssignmentReviewController::class, 'store']);
+    // Route::post('/', [TeacherAssignmentReviewController::class, 'store']);
     Route::get('/{teacherAssignmentReview}', [TeacherAssignmentReviewController::class, 'show']);
     Route::put('/{teacherAssignmentReview}', [TeacherAssignmentReviewController::class, 'update']);
     Route::delete('/{teacherAssignmentReview}', [TeacherAssignmentReviewController::class, 'destroy']);

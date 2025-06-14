@@ -139,5 +139,39 @@ class TeacherAssignmentReviewController extends Controller
         return response()->json($reviews);
     }
 
-    
+    public function storeOrUpdate(Request $request)
+{
+    $request->validate([
+        'submission_id' => 'required|exists:student_submissions,id',
+        'teacher_id' => 'required|exists:teachers,id',
+        'feedback' => 'required|string',
+        'score' => 'required|numeric|min:0|max:100',
+    ]);
+
+    // نحاول نجيب لو في ريفيو موجود أصلاً
+    $review = TeacherAssignmentReview::where('submission_id', $request->submission_id)
+        ->where('teacher_id', $request->teacher_id)
+        ->first();
+
+    if ($review) {
+        // تحديث القديم
+        $review->update([
+            'feedback' => $request->feedback,
+            'score' => $request->score,
+        ]);
+
+        $message = 'Review updated successfully';
+    } else {
+        // إنشاء جديد
+        $review = TeacherAssignmentReview::create($request->all());
+        $message = 'Review created successfully';
+    }
+
+    return response()->json([
+        'status' => 200,
+        'message' => $message,
+        'data' => new TeacherAssignmentReviewResource($review),
+    ], 200);
+}
+
 }

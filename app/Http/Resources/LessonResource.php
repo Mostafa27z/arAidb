@@ -14,6 +14,7 @@ class LessonResource extends JsonResource
             'course_id' => $this->course_id,
             'title' => $this->title,
             'content' => $this->content,
+            'attachment' => $this->attachment ? asset($this->attachment) : null,
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),
         ];

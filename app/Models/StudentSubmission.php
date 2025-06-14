@@ -17,14 +17,29 @@ class StudentSubmission extends Model
     ];
 
     // Relationships
-    public function student() {
-        return $this->belongsTo(Student::class);
-    }
+//     public function student() {
+//         return $this->belongsTo(Student::class);
+//     }
 
-    public function assignment() {
-        return $this->belongsTo(Assignment::class);
-    }
-  public function reviews()
+//     public function assignment() {
+//         return $this->belongsTo(Assignment::class);
+//     }
+//   public function reviews()
+// {
+//     return $this->hasMany(TeacherAssignmentReview::class, 'submission_id');
+// }
+
+public function assignment()
+{
+    return $this->belongsTo(Assignment::class, 'assignment_id');
+}
+
+public function student()
+{
+    return $this->belongsTo(Student::class, 'student_id');
+}
+
+public function reviews()
 {
     return $this->hasMany(TeacherAssignmentReview::class, 'submission_id');
 }

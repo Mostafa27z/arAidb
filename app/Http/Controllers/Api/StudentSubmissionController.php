@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\StudentSubmissionResource;
 use App\Models\Assignment;
 use App\Models\Student;
+use App\Models\Teacher;
 use App\Models\StudentSubmission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -304,7 +305,7 @@ public function checkSubmissionStatus(Request $request)
             'status' => 200,
             'submitted' => true,
             'submission_id' => $submission->id,
-            'submitted_at' => $submission->created_at,
+            'submitted_at' => $submission->updated_at,
         ]);
     } else {
         return response()->json([
@@ -313,5 +314,46 @@ public function checkSubmissionStatus(Request $request)
         ]);
     }
 }
+public function getSubmissionsByTeacher($teacherId)  
+{  
+    $submissions = StudentSubmission::whereHas('assignment.lesson.course', function ($q) use ($teacherId) {  
+            $q->where('teacher_id', $teacherId);  
+        })  
+        ->with(['student.user', 'assignment.lesson.course', 'reviews.teacher.user'])  
+        ->get(); 
+ 
+    $mappedSubmissions = $submissions->map(function ($submission) { 
+        return [ 
+            'id' => $submission->id, 
+            'student_id' => $submission->student_id, 
+            'student_name' => optional(optional($submission->student)->user)->name ?? 'N/A', 
+            'assignment_id' => $submission->assignment_id, 
+            'assignment_title' => optional($submission->assignment)->title ?? 'N/A', 
+            'submission_date' => $submission->submission_date, 
+            'file_path' => $submission->file_path, 
+            'submission_text' => $submission->submission_text, 
+            'created_at' => $submission->created_at->toDateTimeString(), 
+            'updated_at' => $submission->updated_at->toDateTimeString(), 
+            
+            // نضيف بيانات الريفيو 
+            'reviews' => $submission->reviews->map(function ($review) {
+                return [
+                    'id' => $review->id,
+                    'teacher_id' => $review->teacher_id,
+                    'teacher_name' => optional(optional($review->teacher)->user)->name ?? 'N/A',
+                    'feedback' => $review->feedback,
+                    'score' => $review->score,
+                    'created_at' => $review->created_at->toDateTimeString(),
+                ];
+            }),
+        ]; 
+    }); 
+ 
+    return response()->json([  
+        'status' => 200,  
+        'data' => $mappedSubmissions  
+    ]);  
+}
+
 
 }

@@ -4,10 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-
+use Illuminate\Database\Eloquent\SoftDeletes;
 class Assignment extends Model
 {
-    use HasFactory;
+    use HasFactory , SoftDeletes;
 
     protected $fillable = [
         'lesson_id',
@@ -16,9 +16,13 @@ class Assignment extends Model
         'due_date',
     ];
 
-    // Relationship
     public function lesson()
     {
         return $this->belongsTo(Lesson::class);
+    }
+
+    public function submissions()
+    {
+        return $this->hasMany(StudentSubmission::class, 'assignment_id');
     }
 }

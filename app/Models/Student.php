@@ -14,6 +14,10 @@ class Student extends Model
         'parent_id',
         'grade_level',
     ];
+public function clubMembers()
+{
+    return $this->hasMany(ClubMember::class, 'student_id', 'id');
+}
 
     public function student()
     {
@@ -34,6 +38,10 @@ class Student extends Model
     {
         return $this->hasMany(LessonProgress::class);
     }
+public function submissions()
+{
+    return $this->hasMany(StudentSubmission::class, 'student_id');
+}
 
     public function lessonsProgress()
     {
@@ -48,9 +56,10 @@ class Student extends Model
     }
 
     public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+{
+    return $this->belongsTo(User::class, 'student_id', 'id');
+}
+
 
     public function teacher()
     {

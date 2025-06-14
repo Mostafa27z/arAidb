@@ -23,4 +23,14 @@ class ClubMember extends Model
     {
         return $this->belongsTo(Club::class);
     }
+    public function chatMessages()
+{
+    return $this->hasMany(ClubChatMessage::class, 'club_id');
+}
+
+    public function members()
+    {
+        return $this->hasMany(ClubMember::class, 'club_id');
+    }
+
 }

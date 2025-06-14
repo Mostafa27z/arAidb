@@ -12,18 +12,23 @@ class ClubMemberController extends Controller
     /**
      * Get all club members.
      */
-    public function index(Request $request)
-{
-    $query = ClubMember::query();
+    public function index(Request $request) 
+{ 
+    $query = ClubMember::with(['student.user']); // هنا هنجيب بيانات الطالب مع اليوزر
 
-    if ($request->has('student_id')) {
-        $query->where('student_id', $request->student_id);
-    }
+    if ($request->has('student_id')) { 
+        $query->where('student_id', $request->student_id); 
+    } 
+    
+    if ($request->has('club_id')) { 
+        $query->where('club_id', $request->club_id); 
+    } 
 
-    $members = $query->get();
+    $members = $query->get(); 
 
-    return response()->json(['data' => $members]);
+    return response()->json(['data' => $members]); 
 }
+
 
     /**
      * Store a new club member.
@@ -57,13 +62,21 @@ class ClubMemberController extends Controller
     /**
      * Delete a club member.
      */
-    public function destroy(ClubMember $clubMember)
-    {
-        $clubMember->delete();
+    public function destroy(Club $club)
+{
+    // حذف الرسائل المرتبطة بالنادي أولاً
+    $club->chatMessages()->delete();
 
-        return response()->json([
-            'status' => 200,
-            'message' => 'Club member removed successfully.',
-        ], 200);
-    }
+    // حذف الأعضاء المرتبطين بالنادي (لو موجودين)
+    $club->members()->delete();
+
+    // ثم حذف النادي نفسه
+    $club->delete();
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'Club deleted successfully.',
+    ], 200);
+}
+
 }

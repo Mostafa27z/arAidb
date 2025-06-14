@@ -17,6 +17,61 @@ class TeacherController extends Controller
     /**
      * Display a listing of the resource.
      */
+public function dashboardSummary($teacherId)  
+{  
+    $teacher = Teacher::findOrFail($teacherId);  
+
+    $courseIds = $teacher->courses()->pluck('id');  
+
+    // الطلاب المشتركين approved فقط
+    $students = \App\Models\CourseEnrollment::with(['student.user', 'course']) 
+        ->whereIn('course_id', $courseIds) 
+        ->where('status', 'approved')
+        ->get(); 
+
+    // احسب عدد الطلاب الفعليين بشكل unique بناءً على student_id
+    $uniqueStudentsCount = $students->pluck('student_id')->unique()->count();
+
+    // الدروس
+    $lessonIds = \App\Models\Lesson::whereIn('course_id', $courseIds)->pluck('id');  
+
+    // الواجبات
+    $assignmentIds = \App\Models\Assignment::whereIn('lesson_id', $lessonIds)->pluck('id');  
+
+    // التسليمات غير المصححة
+    $unreviewedAssignments = \App\Models\StudentSubmission::whereIn('assignment_id', $assignmentIds) 
+        ->whereDoesntHave('reviews') 
+        ->get(); 
+
+    $pendingAssignmentsCount = $unreviewedAssignments->count(); 
+
+    return response()->json([  
+        'total_courses' => $courseIds->count(), 
+        'total_students' => $uniqueStudentsCount, 
+        'pending_assignments' => $pendingAssignmentsCount, 
+
+        'students' => $students->map(function ($enrollment) { 
+            return [ 
+                'student_id' => optional($enrollment->student)->id, 
+                'student_name' => optional(optional($enrollment->student)->user)->name ?? 'N/A', 
+                'course_name' => optional($enrollment->course)->title ?? 'N/A', 
+            ]; 
+        }), 
+
+        'unreviewedAssignments' => $unreviewedAssignments->map(function ($submission) { 
+            return [ 
+                'submission_id' => $submission->id, 
+                'assignment_title' => optional($submission->assignment)->title ?? 'N/A', 
+                'student_name' => optional(optional($submission->student)->user)->name ?? 'N/A', 
+                'submitted_at' => $submission->updated_at, 
+            ]; 
+        }) 
+    ]); 
+}
+
+
+
+
     public function index()
     {
         $teachers = Teacher::with('user')->paginate(20);

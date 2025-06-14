@@ -1,19 +1,34 @@
 <?php
+
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\LessonResource;
 use App\Models\Lesson;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class LessonController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+    public function getLessonsByTeacher($teacherId)
+{
+    // نجيب كل الكورسات التي تخص هذا المدرس
+    $courseIds = \App\Models\Course::where('teacher_id', $teacherId)->pluck('id');
+
+    // نجيب كل الدروس التابعة لهذه الكورسات
+    $lessons = \App\Models\Lesson::whereIn('course_id', $courseIds)
+                ->whereNull('deleted_at')  // لو عندك soft delete
+                ->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => \App\Http\Resources\LessonResource::collection($lessons),
+    ]);
+}
+
     public function index()
     {
-        $lessons = Lesson::paginate(10);
+        $lessons = Lesson::whereNull('deleted_at')->paginate(10);
 
         return response()->json([
             'status'     => 200,
@@ -26,84 +41,91 @@ class LessonController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-        // Validation
         $request->validate([
             'course_id' => ['required', 'exists:courses,id'],
             'title'     => 'required|string|max:255',
             'content'   => 'required|string',
+            'attachment' => 'nullable|file'
         ]);
 
-        // Store
+        $attachmentPath = null;
+
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store('lesson_attachments', 'public');
+        }
+
         $lesson = Lesson::create([
             'course_id' => $request->course_id,
             'title'     => $request->title,
             'content'   => $request->content,
+            'attachment' => $attachmentPath ? Storage::url($attachmentPath) : null,
         ]);
 
-        // Response
         return response()->json([
             'status' => 201,
-            'data'   => new LessonResource($lesson),
+            'data' => new LessonResource($lesson),
         ], 201);
     }
 
-    /**
-     * Display the specified resource.
-     */
     public function show(Lesson $lesson)
     {
+        if ($lesson->deleted_at) {
+            return response()->json(['message' => 'Lesson not found'], 404);
+        }
+
         return response()->json([
             'status' => 200,
             'data'   => new LessonResource($lesson),
         ], 200);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Lesson $lesson)
     {
-        // Validation
         $validatedData = $request->validate([
             'course_id' => ['required', 'exists:courses,id'],
             'title'     => ['required', 'string', 'max:255'],
             'content'   => ['required', 'string'],
+            'attachment' => 'nullable|file'
         ]);
 
-        // Update lesson record
-        $lesson->update($validatedData);
+        if ($request->hasFile('attachment')) {
+            if ($lesson->attachment) {
+                $oldPath = str_replace('/storage/', '', $lesson->attachment);
+                Storage::disk('public')->delete($oldPath);
+            }
+            $attachmentPath = $request->file('attachment')->store('lesson_attachments', 'public');
+            $lesson->attachment = Storage::url($attachmentPath);
+        }
 
-        // Return response
+        $lesson->update([
+            'course_id' => $validatedData['course_id'],
+            'title' => $validatedData['title'],
+            'content' => $validatedData['content'],
+            'attachment' => $lesson->attachment,
+        ]);
+
         return response()->json([
             'status' => 200,
             'data'   => new LessonResource($lesson),
         ], 200);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(Lesson $lesson)
     {
         $lesson->delete();
 
         return response()->json([
             'status'  => 200,
-            'message' => 'The lesson was successfully deleted',
+            'message' => 'The lesson was successfully soft deleted',
         ], 200);
     }
 
-    /**
-     * Get lessons by course ID
-     */
     public function getLessonsByCourseId($courseId)
     {
         $lessons = Lesson::where('course_id', $courseId)
+            ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -113,13 +135,11 @@ class LessonController extends Controller
         ]);
     }
 
-    /**
-     * Get next lesson in course
-     */
     public function getNextLesson(Lesson $lesson)
     {
         $nextLesson = Lesson::where('course_id', $lesson->course_id)
             ->where('created_at', '>', $lesson->created_at)
+            ->whereNull('deleted_at')
             ->orderBy('created_at', 'asc')
             ->first();
 
@@ -129,13 +149,11 @@ class LessonController extends Controller
         ]);
     }
 
-    /**
-     * Get previous lesson in course
-     */
     public function getPreviousLesson(Lesson $lesson)
     {
         $previousLesson = Lesson::where('course_id', $lesson->course_id)
             ->where('created_at', '<', $lesson->created_at)
+            ->whereNull('deleted_at')
             ->orderBy('created_at', 'desc')
             ->first();
 
@@ -145,12 +163,10 @@ class LessonController extends Controller
         ]);
     }
 
-    /**
-     * Get latest lessons
-     */
     public function getLatestLessons()
     {
-        $lessons = Lesson::latest()
+        $lessons = Lesson::whereNull('deleted_at')
+            ->latest()
             ->take(5)
             ->get();
 

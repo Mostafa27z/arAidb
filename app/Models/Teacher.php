@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Teacher extends Model
 {
-
     use HasFactory;
 
     protected $fillable = [
@@ -16,13 +15,21 @@ class Teacher extends Model
         'bio'
     ];
 
+    // العلاقة السليمة مع الـ User
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function course()
+    // دي الغلطة اللي محتاجة نشيلها 👇 (دي علاقة مش موجودة أصلاً)
+    // public function course() 
+    // { 
+    //     return $this->belongsTo(User::class); 
+    // }
+
+    // العلاقة الصح مع الـ Courses:
+    public function courses()
     {
-        return $this->belongsTo(User::class);
+        return $this->hasMany(Course::class, 'teacher_id');
     }
 }
