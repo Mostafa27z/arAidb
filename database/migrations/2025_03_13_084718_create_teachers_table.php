@@ -12,12 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('teachers', function (Blueprint $table) {
-            $table->id(); // Standard Laravel 'id' instead of 'teacher_id'
-            $table->foreignId('user_id')->unique()->constrained('users');
-            $table->text('qualification')->nullable();
-            $table->text('bio')->nullable();
-            $table->timestamps(); // Adding timestamps for consistency
-        });
+    $table->id();
+    $table->foreignId('user_id')
+        ->constrained('users')
+        ->cascadeOnDelete() // Delete teacher record when user is deleted
+        ->unique();
+    $table->text('qualification')->nullable();
+    $table->text('bio')->nullable();
+    $table->timestamps();
+});
     }
 
     /**

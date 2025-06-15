@@ -12,11 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('group_members', function (Blueprint $table) {
-            $table->id(); // Standard Laravel 'id' instead of 'member_id'
-            $table->foreignId('student_id')->constrained('students');
-            $table->foreignId('group_id')->constrained('groups');
-            $table->timestamps(); // Adding timestamps for consistency
-        });
+    $table->id();
+    $table->foreignId('student_id')
+        ->constrained('students')
+        ->cascadeOnDelete(); // Delete membership when student is deleted
+    $table->foreignId('group_id')
+        ->constrained('groups')
+        ->cascadeOnDelete(); // Delete membership when group is deleted
+    $table->timestamps();
+});
 
     }
 

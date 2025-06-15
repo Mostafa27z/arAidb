@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('assignments', function (Blueprint $table) {
             $table->id(); // Standard Laravel 'id' instead of 'assignment_id'
-            $table->foreignId('lesson_id')->constrained('lessons');
+              $table->foreignId('lesson_id')
+        ->constrained('lessons')
+        ->cascadeOnDelete();
             $table->string('title');
             $table->text('description');
             $table->date('due_date');

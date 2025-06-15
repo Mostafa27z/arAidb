@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('question_options', function (Blueprint $table) {
             $table->id(); // Standard Laravel 'id' instead of 'option_id'
-            $table->foreignId('question_id')->constrained('questions');
+            $table->foreignId('question_id')
+        ->constrained('questions')
+        ->cascadeOnDelete();
             $table->text('option_text');
             $table->boolean('is_correct');
             $table->timestamps(); // Adding timestamps for consistency

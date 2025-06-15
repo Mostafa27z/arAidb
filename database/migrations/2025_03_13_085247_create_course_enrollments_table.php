@@ -12,12 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('course_enrollments', function (Blueprint $table) {
-            $table->id(); // Standard Laravel 'id' instead of 'enrollment_id'
-            $table->foreignId('student_id')->constrained('students');
-            $table->foreignId('course_id')->constrained('courses');
-            $table->timestamp('enrolled_at')->useCurrent();
-            $table->timestamps(); // Adding timestamps for consistency
-        });
+    $table->id();
+    $table->foreignId('student_id')
+        ->constrained('students')
+        ->cascadeOnDelete(); // Delete enrollment when student is deleted
+    $table->foreignId('course_id')
+        ->constrained('courses')
+        ->cascadeOnDelete(); // Delete enrollment when course is deleted
+    $table->timestamp('enrolled_at')->useCurrent();
+    $table->timestamps();
+});
 
     }
 

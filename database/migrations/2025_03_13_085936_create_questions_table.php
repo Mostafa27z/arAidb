@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('questions', function (Blueprint $table) {
             $table->id(); // Standard Laravel 'id' instead of 'question_id'
-            $table->foreignId('lesson_id')->constrained('lessons');
+            $table->foreignId('lesson_id')
+        ->constrained('lessons')
+        ->cascadeOnDelete();
             $table->text('question_text');
             $table->enum('question_type', ['mcq', 'checkbox', 'true_false', 'short_answer', 'essay']);
             $table->timestamps(); // Using timestamps() instead of just created_at

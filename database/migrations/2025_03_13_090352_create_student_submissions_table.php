@@ -13,8 +13,12 @@ return new class extends Migration
     {
         Schema::create('student_submissions', function (Blueprint $table) {
             $table->id(); // Standard Laravel 'id' instead of 'submission_id'
-            $table->foreignId('student_id')->constrained('students');
-            $table->foreignId('assignment_id')->constrained('assignments');
+            $table->foreignId('student_id')
+        ->constrained('students')
+        ->cascadeOnDelete(); // Delete submissions when student is deleted
+    $table->foreignId('assignment_id')
+        ->constrained('assignments')
+        ->cascadeOnDelete();
             $table->string('file_path')->nullable();
             $table->text('submission_text')->nullable();
             $table->timestamps(); // Using timestamps() instead of just submitted_at

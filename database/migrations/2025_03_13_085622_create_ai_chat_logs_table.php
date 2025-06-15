@@ -13,7 +13,9 @@ return new class extends Migration
     {
         Schema::create('ai_chat_logs', function (Blueprint $table) {
             $table->id(); // Standard Laravel 'id' instead of 'chat_id'
-            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('user_id')
+        ->constrained('users')
+        ->cascadeOnDelete();
             $table->text('message');
             $table->boolean('is_ai')->default(false);
             $table->timestamps(); // Using timestamps() instead of just timestamp

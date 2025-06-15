@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('teacher_assignment_review', function (Blueprint $table) {
             $table->id(); // Standard Laravel 'id' instead of 'review_id'
-            $table->foreignId('submission_id')->constrained('student_submissions');
-            $table->foreignId('teacher_id')->constrained('teachers');
+            $table->foreignId('submission_id')->constrained('student_submissions')->cascadeOnDelete();
+            $table->foreignId('teacher_id')->constrained('teachers')->cascadeOnDelete();
             $table->text('feedback');
             $table->float('score');
             $table->timestamps(); // Using timestamps() instead of just reviewed_at

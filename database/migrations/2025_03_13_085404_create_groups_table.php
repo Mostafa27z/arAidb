@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id(); // Standard Laravel 'id' instead of 'group_id'
             $table->string('title');
             $table->text('description')->nullable();
-            $table->foreignId('teacher_id')->constrained('teachers');
+            $table->foreignId('teacher_id')
+        ->constrained('teachers')
+         ->cascadeOnDelete();
             $table->dateTime('start_time');
             $table->dateTime('end_time');
             $table->timestamps(); // Adding timestamps for consistency
