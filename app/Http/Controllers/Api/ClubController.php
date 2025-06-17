@@ -9,6 +9,33 @@ use Illuminate\Http\Request;
 
 class ClubController extends Controller
 {
+    public function clubsWithLastMessage()
+{
+    $clubs = Club::withCount('members')
+        ->with(['messages' => function ($q) {
+            $q->latest()->limit(1);
+        }])
+        ->latest()
+        ->get();
+
+    $data = $clubs->map(function ($club) {
+        $lastMessage = $club->messages->first();
+        return [
+            'id' => $club->id,
+            'name' => $club->name,
+            'description' => $club->description,
+            'members_count' => $club->members_count,
+            'last_message' => $lastMessage ? $lastMessage->message : null,
+            'last_message_date' => $lastMessage ? $lastMessage->created_at->toDateTimeString() : null,
+        ];
+    });
+
+    return response()->json([
+        'status' => 200,
+        'data' => $data
+    ]);
+}
+
     /**
      * Get all clubs.
      */

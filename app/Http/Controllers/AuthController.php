@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 use App\Http\Resources\UserResource;
 use App\Models\Student;
 use App\Models\Teacher;
-use App\Models\ParentModel; // لو عندك جدول parents
+// use App\Models\ParentModel; // لو عندك جدول parents
 class AuthController extends Controller
 {
     public function register(Request $request)
@@ -52,12 +52,10 @@ class AuthController extends Controller
                 'bio' => null,
             ]);
             $related_id = $teacher->id;
-        } elseif ($user->role === 'parent') {
-            $parent = ParentModel::create([
-                'user_id' => $user->id,
-            ]);
-            $related_id = $parent->id;
+        } elseif ($user->role === 'parent') { 
+            $related_id = null; 
         }
+
 
         $token = $user->createToken('api-token')->plainTextToken;
 
@@ -93,10 +91,10 @@ class AuthController extends Controller
         } elseif ($user->role === 'teacher') {
             $teacher = Teacher::where('user_id', $user->id)->first();
             $related_id = $teacher?->id;
-        } elseif ($user->role === 'parent') {
-            $parent = ParentModel::where('user_id', $user->id)->first();
-            $related_id = $parent?->id;
+        } elseif ($user->role === 'parent') { 
+            $related_id = null; // مفيش جدول parent
         }
+
 
         $token = $user->createToken('api-token')->plainTextToken;
 

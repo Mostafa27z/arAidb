@@ -63,12 +63,26 @@ class CourseEnrollmentController extends Controller
     {
         $enrollments = CourseEnrollment::with('course')
             ->where('student_id', $student_id)
-            ->where('status', 'approved')
+            // ->where('status', 'approved')
             ->whereNull('deleted_at') // optional لو شغلت soft delete
             ->get();
 
         return $this->successResponse($enrollments);
     }
+public function getAllEnrollments()
+{
+    $enrollments = CourseEnrollment::with(['course', 'student.user'])->get();
+
+    return $this->successResponse(CourseEnrollmentResource::collection($enrollments));
+}
+public function getAllEnrollmentsByStudent($student_id)
+{
+    $enrollments = CourseEnrollment::with(['course', 'student.user'])
+        ->where('student_id', $student_id)
+        ->get();
+
+    return $this->successResponse(CourseEnrollmentResource::collection($enrollments));
+}
 
     /** 
      * ✅ Helper Success Response

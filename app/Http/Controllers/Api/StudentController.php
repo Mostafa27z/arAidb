@@ -13,6 +13,7 @@ use App\Rules\UserRoleValidation;
 use Illuminate\Http\Request;
 use App\Rules\ParentRole;
 use Illuminate\Validation\Rule;
+use App\Models\User;
 
 class StudentController extends Controller
 {
@@ -294,4 +295,85 @@ class StudentController extends Controller
             'data' => $progress
         ], 200);
     }
+    /**
+ * Get all students for a specific parent
+ */
+public function getByParent($parentId)
+{
+    $students = Student::where('parent_id', $parentId)->with('user')->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => StudentResource::collection($students)
+    ], 200);
+}
+public function attachStudentToParent(Request $request)
+{
+    $parentId = auth()->user()->id;
+
+    $validated = $request->validate([
+        'email' => 'required|email|exists:users,email'
+    ]);
+
+    $user = User::where('email', $validated['email'])
+                ->where('role', 'student')
+                ->first();
+
+    if (!$user) {
+        return response()->json([
+            'status' => 404,
+            'message' => 'Student not found'
+        ], 404);
+    }
+
+    $student = Student::where('student_id', $user->id)->first();
+
+    if (!$student) {
+        return response()->json([
+            'status' => 404,
+            'message' => 'Student record not found'
+        ], 404);
+    }
+
+    if ($student->parent_id) {
+        return response()->json([
+            'status' => 400,
+            'message' => 'Student already linked to a parent'
+        ], 400);
+    }
+
+    $student->update([
+        'parent_id' => $parentId
+    ]);
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'Student successfully linked to your account',
+        'data' => new StudentResource($student)
+    ]);
+}
+public function assignToParent(Request $request)
+{
+    $request->validate([
+        'email' => 'required|email|exists:users,email',
+        'parent_id' => 'required|exists:users,id'
+    ]);
+
+    $studentUser = User::where('email', $request->email)->where('role', 'student')->first();
+    if (!$studentUser) {
+        return response()->json(['message' => 'هذا البريد لا يعود لطالب'], 404);
+    }
+
+    $student = Student::where('student_id', $studentUser->id)->first();
+    if (!$student) {
+        return response()->json(['message' => 'الطالب غير موجود في قاعدة البيانات'], 404);
+    }
+
+    $student->parent_id = $request->parent_id;
+    $student->save();
+
+    return response()->json(['message' => 'تم ربط الطالب بنجاح'], 200);
+}
+
+
 }

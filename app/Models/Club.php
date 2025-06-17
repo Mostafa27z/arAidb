@@ -17,5 +17,8 @@ class Club extends Model
     {
         return $this->hasMany(ClubMember::class);
     }
-
+    public function messages()
+{
+    return $this->hasMany(ClubChatMessage::class);
+}
 }

@@ -76,6 +76,7 @@ Route::get('/', [ClubController::class, 'index']);
     Route::put('/{club}', [ClubController::class, 'update']);
     Route::delete('/{club}', [ClubController::class, 'destroy']);
 });
+Route::get('/clubs-with-last-message', [ClubController::class, 'clubsWithLastMessage']);
 
 
 
@@ -101,8 +102,14 @@ Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
 });
 
 Route::apiResource('users', UserController::class);
-
+Route::apiResource('courses', CourseController::class);
 Route::apiResource('students', StudentController::class);
+// Route::get('students/parent/{parentId}', [StudentController::class, 'getByParent']);
+Route::prefix('parents')->group(function () {
+    Route::get('{parentId}/students', [StudentController::class, 'getByParent']);
+});
+Route::post('students/assign-to-parent', [StudentController::class, 'assignToParent']);
+
 // Additional student-specific functionalities
 Route::prefix('students/{student}')->group(function () {
     // Profile and courses
@@ -152,6 +159,8 @@ Route::prefix('enrollments')->group(function () {
 });
 Route::get('/enrollments/teacher/{teacher_id}', [CourseEnrollmentController::class, 'getEnrollmentsByTeacher']);
 Route::put('/enrollments/{enrollment}/status', [CourseEnrollmentController::class, 'updateStatus']);
+Route::get('/enrollments/all', [CourseEnrollmentController::class, 'getAllEnrollments']);
+Route::get('/enrollments/student/{student_id}/all', [CourseEnrollmentController::class, 'getAllEnrollmentsByStudent']);
 
 // Lesson Routes
 Route::prefix('lessons')->group(function () { 
