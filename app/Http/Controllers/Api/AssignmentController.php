@@ -36,43 +36,40 @@ class AssignmentController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        // Validation
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'course_id' => 'required|exists:courses,id',
-            'teacher_id' => 'required|exists:teachers,id',
-            'due_date' => 'required|date|after:now',
-            'max_score' => 'required|integer|min:1',
-            'file_path' => 'nullable|file|max:10240', // 10MB max
-            'status' => ['required', Rule::in(['draft', 'published'])]
-        ]);
+   
 
-        // Handle file upload if present
-        $filePath = null;
-        if ($request->hasFile('file_path')) {
-            $filePath = $request->file('file_path')->store('assignments', 'public');
-        }
+public function store(Request $request)
+{
+    // ✅ التحقق من صحة البيانات
+    $request->validate([
+        'title' => 'required|string|max:255',
+        'description' => 'nullable|string',
+        'lesson_id' => 'required|exists:lessons,id',
+        'due_date' => 'required|date|after:now',
+        'attachment' => 'nullable|file|max:10240' // أقصى حجم 10MB
+    ]);
 
-        // Create assignment
-        $assignment = Assignment::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'course_id' => $request->course_id,
-            'teacher_id' => $request->teacher_id,
-            'due_date' => $request->due_date,
-            'max_score' => $request->max_score,
-            'file_path' => $filePath ? Storage::url($filePath) : null,
-            'status' => $request->status
-        ]);
-
-        return response()->json([
-            'status' => 201,
-            'data' => new AssignmentResource($assignment)
-        ], 201);
+    // ✅ رفع الملف إن وجد
+    $filePath = null;
+    if ($request->hasFile('attachment')) {
+        $filePath = $request->file('attachment')->store('assignments', 'public');
     }
+
+    // ✅ إنشاء المهمة
+    $assignment = \App\Models\Assignment::create([
+        'title' => $request->title,
+        'description' => $request->description,
+        'lesson_id' => $request->lesson_id,
+        'due_date' => $request->due_date,
+        'attachment' => $filePath ? Storage::url($filePath) : null,
+    ]);
+
+    return response()->json([
+        'status' => 201,
+        'data' => new \App\Http\Resources\AssignmentResource($assignment)
+    ], 201);
+}
+
 
     /**
      * Display the specified resource.
@@ -172,21 +169,25 @@ class AssignmentController extends Controller
      * Get all assignments created by a teacher
      */
     public function teacherAssignments(Teacher $teacher)
-    {
-        $assignments = Assignment::where('teacher_id', $teacher->id)
-            ->with(['course'])
-            ->paginate(10);
+{
+    // Get all assignments for lessons that belong to teacher's courses
+    $assignments = Assignment::whereHas('lesson.course', function ($query) use ($teacher) {
+        $query->where('teacher_id', $teacher->id);
+    })
+    ->with(['lesson.course']) // تحميل العلاقات المطلوبة
+    ->paginate(10);
 
-        return response()->json([
-            'status' => 200,
-            'data' => AssignmentResource::collection($assignments),
-            'pagination' => [
-                'current_page' => $assignments->currentPage(),
-                'last_page' => $assignments->lastPage(),
-                'total' => $assignments->total(),
-            ]
-        ]);
-    }
+    return response()->json([
+        'status' => 200,
+        'data' => AssignmentResource::collection($assignments),
+        'pagination' => [
+            'current_page' => $assignments->currentPage(),
+            'last_page' => $assignments->lastPage(),
+            'total' => $assignments->total(),
+        ]
+    ]);
+}
+
 
     /**
      * Get all assignments for a student (from enrolled courses)

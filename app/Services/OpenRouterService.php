@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Services;
-
+ 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Models\AiChatLog; // Assuming you have this model
