@@ -40,7 +40,12 @@ class ClubMemberController extends Controller
             'club_id' => 'required|exists:clubs,id',
         ]);
 
-        $clubMember = ClubMember::create($request->all());
+        $clubMember = ClubMember::create([
+            'student_id' => $request->student_id,
+            'club_id' => $request->club_id,
+            'status' => 'pending'
+        ]);
+
 
         return response()->json([
             'status' => 201,
@@ -77,6 +82,20 @@ class ClubMemberController extends Controller
         'status' => 200,
         'message' => 'Club deleted successfully.',
     ], 200);
+}
+public function approve(Request $request, $id)
+{
+    $member = ClubMember::findOrFail($id);
+
+    // تحقق أن المدرس هو صاحب الجروب
+    if ($member->club->teacher_id !== $request->teacher_id) {
+        return response()->json(['message' => 'غير مصرح'], 403);
+    }
+
+    $member->status = 'approved';
+    $member->save();
+
+    return response()->json(['message' => 'تم قبول الطالب']);
 }
 
 }

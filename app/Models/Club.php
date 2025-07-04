@@ -12,6 +12,7 @@ class Club extends Model
     protected $fillable = [
         'name',
         'description',
+        'teacher_id'
     ];
     public function members()
     {
@@ -21,4 +22,9 @@ class Club extends Model
 {
     return $this->hasMany(ClubChatMessage::class);
 }
+public function teacher()
+{
+    return $this->belongsTo(Teacher::class);
+}
+
 }

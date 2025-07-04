@@ -23,6 +23,44 @@ class GroupMemberController extends Controller
             ]
         ]);
     }
+public function requestToJoin(Request $request)
+{
+    $data = $request->validate([
+        'student_id' => 'required|exists:students,id',
+        'group_id' => 'required|exists:groups,id',
+    ]);
+
+    $member = GroupMember::firstOrCreate([
+        'student_id' => $data['student_id'],
+        'group_id' => $data['group_id']
+    ], ['status' => 'pending']);
+
+    return response()->json(['status' => 201, 'data' => $member]);
+}
+
+public function approve($id)
+{
+    $member = GroupMember::findOrFail($id);
+    $member->update(['status' => 'approved']);
+    return response()->json(['status' => 200, 'message' => 'تمت الموافقة على الطالب']);
+}
+
+public function reject($id)
+{
+    $member = GroupMember::findOrFail($id);
+    $member->update(['status' => 'rejected']);
+    return response()->json(['status' => 200, 'message' => 'تم رفض الطلب']);
+}
+
+public function pendingRequests($groupId)
+{
+    $members = GroupMember::with('student.user')
+        ->where('group_id', $groupId)
+        ->where('status', 'pending')
+        ->get();
+
+    return response()->json(['status' => 200, 'data' => $members]);
+}
 
     public function store(Request $request)
     {

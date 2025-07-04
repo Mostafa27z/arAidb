@@ -36,6 +36,7 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users',
             'password' => 'required|min:6',
+            'phone' => 'required|string|max:20|unique:users',
             'role' => 'required|in:student,parent,teacher,admin,moderator',
         ]);
 
@@ -45,6 +46,7 @@ class UserController extends Controller
             'email' => $request->email,
             'password' => $request->password,
             'role' => $request->role,
+            'phone' => $validated['phone'],
         ]);
 
         // View the result as JSON with 201 status code 'Created' and the user data

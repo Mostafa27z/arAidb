@@ -34,11 +34,34 @@ class ExamController extends Controller
     }
 
     // Display the specified exam
-    public function show($id)
-    {
-        $exam = Exam::with('course')->findOrFail($id);
-        return new ExamResource($exam);
+ // ExamController.php
+
+public function show($id)
+{
+    $exam = Exam::with(['course', 'questions.options'])->findOrFail($id);
+
+    if (!$exam->start_time || !$exam->end_time) {
+        return response()->json([
+            'status' => 500,
+            'message' => 'مواعيد الامتحان غير مكتملة.'
+        ], 500);
     }
+
+    if (now()->lt($exam->start_time)) {
+        return response()->json([
+            'status' => 403,
+            'message' => 'الامتحان لم يبدأ بعد.'
+        ], 403);
+    }
+
+    return response()->json([
+        'status' => 200,
+        'data' => new ExamResource($exam)
+    ]);
+}
+
+
+
 
     // Update the specified exam
     public function update(Request $request, $id)
@@ -65,22 +88,59 @@ class ExamController extends Controller
         $exam->delete();
         return response()->json(null, 204);
     }
+public function getResultsByStudentId($studentId)
+{
+    $results = ExamResult::with(['exam'])
+        ->where('student_id', $studentId)
+        ->get()
+        ->filter(function ($result) {
+            return now()->gte($result->exam->end_date); // فقط بعد انتهاء الامتحان
+        });
+
+    return response()->json([
+        'status' => 200,
+        'data' => ExamResultResource::collection($results)
+    ]);
+}
+public function getAvailableExamsForStudent($studentId)
+{
+    $now = now();
+
+    $exams = Exam::where('start_time', '<=', $now)
+        ->where('end_time', '>=', $now)
+        ->whereHas('course.enrollments', function ($q) use ($studentId) {
+            $q->where('student_id', $studentId)
+              ->where('status', 'approved');
+        })
+        ->with('course')
+        ->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => ExamResource::collection($exams),
+    ]);
+}
+
 
     /**
      * Get exams by course ID
      */
-    public function getExamsByCourseId($courseId)
-    {
-        $exams = Exam::where('course_id', $courseId)
-            ->with('course')
-            ->orderBy('exam_date', 'asc')
-            ->get();
+   public function getExamsByTeacher($teacherId)
+{
+    $exams = Exam::whereHas('course.teachers', function ($q) use ($teacherId) {
+        $q->where('teacher_id', $teacherId);
+    })
+    ->with('course')
+    ->orderBy('exam_date', 'desc')
+    ->get();
 
-        return response()->json([
-            'status' => 200,
-            'data'   => ExamResource::collection($exams),
-        ]);
-    }
+    return response()->json([
+        'status' => 200,
+        'data' => ExamResource::collection($exams),
+    ]);
+}
+
+
 
     /**
      * Get upcoming exams
@@ -97,6 +157,37 @@ class ExamController extends Controller
             'data'   => ExamResource::collection($exams),
         ]);
     }
+public function getExamsNeedingGrading($teacherId)
+{
+    $exams = Exam::whereHas('course.teachers', function ($q) use ($teacherId) {
+        $q->where('teacher_id', $teacherId);
+    })
+    ->whereHas('questions', function ($q) {
+        $q->where('type', 'essay'); // فقط الأسئلة المقالية
+    })
+    ->with('course')
+    ->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => ExamResource::collection($exams),
+    ]);
+}
+public function getExamsByCourseAndStudent($courseId, $studentId)
+{
+    $exams = Exam::where('course_id', $courseId)
+        ->whereHas('course.enrollments', function ($q) use ($studentId) {
+            $q->where('student_id', $studentId)
+              ->where('status', 'approved');
+        })
+        ->with('course')
+        ->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => ExamResource::collection($exams),
+    ]);
+}
 
     /**
      * Get past exams

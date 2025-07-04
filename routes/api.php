@@ -25,7 +25,10 @@ use App\Http\Controllers\Api\ClubMemberController;
 use App\Http\Controllers\Api\ClubChatMessageController;
 use App\Http\Controllers\Api\StudentAnswerController;
 use App\Http\Controllers\Api\CourseEnrollmentController;
-// use App\Http\Controllers\Api\CourseController;
+use App\Http\Controllers\Api\StudentExamAnswerController;
+use App\Http\Controllers\Api\GroupController;
+use App\Http\Controllers\Api\GroupSessionController;
+use App\Http\Controllers\Api\GroupMemberController;
 Route::get('/', function () {
     return response()->json(['message' => 'Welcome to API'], 200);
 });
@@ -69,8 +72,10 @@ Route::prefix('clubs')->group(function () {
     Route::post('/messages', [ClubChatMessageController::class, 'store']);
     Route::get('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'show']);
     Route::delete('/messages/{clubChatMessage}', [ClubChatMessageController::class, 'destroy']);
-    
-Route::get('/', [ClubController::class, 'index']);
+    Route::get('/student/{studentId}', [ClubController::class, 'getClubsForStudent']);
+    Route::get('/teacher/{teacherId}', [ClubController::class, 'getClubsForTeacher']);
+
+    Route::get('/', [ClubController::class, 'index']);  
     Route::post('/', [ClubController::class, 'store']);
     Route::get('/{club}', [ClubController::class, 'show']);
     Route::put('/{club}', [ClubController::class, 'update']);
@@ -78,7 +83,32 @@ Route::get('/', [ClubController::class, 'index']);
 });
 Route::get('/clubs-with-last-message', [ClubController::class, 'clubsWithLastMessage']);
 
+// Group membership
+Route::prefix('group-members')->group(function () {
+    Route::post('/request', [GroupMemberController::class, 'requestToJoin']);
+    Route::put('/{id}/approve', [GroupMemberController::class, 'approve']);
+    Route::put('/{id}/reject', [GroupMemberController::class, 'reject']);
+    Route::get('/group/{groupId}/pending', [GroupMemberController::class, 'pendingRequests']);
+});
 
+// Group sessions
+Route::prefix('group-sessions')->group(function () {
+    Route::post('/', [GroupSessionController::class, 'store']);
+    Route::get('/group/{groupId}', [GroupSessionController::class, 'getByGroup']);
+    Route::get('/by-group/{groupId}', [GroupSessionController::class, 'getByGroup']);
+});
+
+
+
+Route::prefix('groups')->group(function () {
+    Route::get('/', [GroupController::class, 'index']);           // Get all groups (paginated)
+    Route::post('/', [GroupController::class, 'store']);          // Create new group
+    Route::get('/{group}', [GroupController::class, 'show']);     // Show single group
+    Route::put('/{group}', [GroupController::class, 'update']);   // Update group
+    Route::delete('/{group}', [GroupController::class, 'destroy']); // Delete group
+    Route::get('/student/{studentId}', [GroupController::class, 'getGroupsForStudent']);
+
+});
 
 Route::prefix('submissions')->group(function () {
     Route::post('/check', [StudentSubmissionController::class, 'checkSubmissionStatus']);
@@ -161,6 +191,7 @@ Route::get('/enrollments/teacher/{teacher_id}', [CourseEnrollmentController::cla
 Route::put('/enrollments/{enrollment}/status', [CourseEnrollmentController::class, 'updateStatus']);
 Route::get('/enrollments/all', [CourseEnrollmentController::class, 'getAllEnrollments']);
 Route::get('/enrollments/student/{student_id}/all', [CourseEnrollmentController::class, 'getAllEnrollmentsByStudent']);
+Route::get('students/{student}/courses-with-progress', [StudentController::class, 'coursesWithProgress']);
 
 // Lesson Routes
 Route::prefix('lessons')->group(function () { 
@@ -181,6 +212,7 @@ Route::prefix('lessons')->group(function () {
 
 
 Route::apiResource('lesson-progress', LessonProgressController::class);
+Route::get('/lesson-progress/students/{student}', [LessonProgressController::class, 'getByStudent']);
 
 // Assignment Routes
 Route::prefix('assignments')->group(function () {
@@ -286,14 +318,20 @@ Route::prefix('exams')->group(function () {
     Route::put('/{exam}', [ExamController::class, 'update']);
     Route::delete('/{exam}', [ExamController::class, 'destroy']);
 
-    // Additional routes
+    // Additional exam filters
     Route::get('/course/{courseId}/all', [ExamController::class, 'getExamsByCourseId']);
     Route::get('/upcoming/all', [ExamController::class, 'getUpcomingExams']);
     Route::get('/past/all', [ExamController::class, 'getPastExams']);
     Route::get('/today/all', [ExamController::class, 'getTodayExams']);
     Route::post('/date-range', [ExamController::class, 'getExamsByDateRange']);
-    
+
+    // Extended functionality
+    Route::get('/teacher/{teacherId}/all', [ExamController::class, 'getExamsByTeacher']);
+    Route::get('/available/{studentId}', [ExamController::class, 'getAvailableExamsForStudent']);
+    Route::get('/pending-grading/{teacherId}', [ExamController::class, 'getExamsNeedingGrading']);
+    Route::get('/course/{courseId}/student/{studentId}', [ExamController::class, 'getExamsByCourseAndStudent']);
 });
+
 
 // Exam Results Routes
 Route::prefix('exam-results')->group(function () {
@@ -320,7 +358,9 @@ Route::prefix('student-answers')->group(function () {
     Route::get('/{answer}', [StudentAnswerController::class, 'show']);
     Route::put('/{answer}', [StudentAnswerController::class, 'update']);
     Route::delete('/{answer}', [StudentAnswerController::class, 'destroy']);
+    
 });
+Route::get('students/{student}/lessons/{lesson}/answers', [StudentAnswerController::class, 'getAnswersForLesson']);
 
 // Parent-Teacher Conversations Routes
 Route::prefix('parent-teacher-conversations')->group(function () {
@@ -342,6 +382,14 @@ Route::prefix('parent-teacher-conversations')->group(function () {
     Route::get('/recent/{userId}/{userType}', [ParentTeacherConversationController::class, 'getRecentConversations']);
     Route::post('/{conversation}/archive', [ParentTeacherConversationController::class, 'archiveConversation']);
     Route::post('/{conversation}/restore', [ParentTeacherConversationController::class, 'restoreConversation']);
+});
+
+
+Route::prefix('exam-answers')->group(function () {
+    Route::get('/', [StudentExamAnswerController::class, 'index']); // All answers
+    Route::post('/', [StudentExamAnswerController::class, 'store']); // Submit multiple answers
+    Route::get('/exam/{examId}/student/{studentId}', [StudentExamAnswerController::class, 'getAnswersForExam']); // For teacher review
+    Route::put('/{id}/score', [StudentExamAnswerController::class, 'updateScore']); // Update score for essay
 });
 
 RateLimiter::for('api', function (Request $request) {

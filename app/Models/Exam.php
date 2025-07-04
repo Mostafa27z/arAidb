@@ -13,10 +13,8 @@ class Exam extends Model
     protected $table = 'exams';
 
     // Define fillable fields to protect from mass-assignment vulnerability
-    protected $fillable = [
-        'course_id',
-        'title',
-        'exam_date'
+    protected $protected = [
+        
     ];
 
     // Define the relationship with Course
@@ -24,4 +22,9 @@ class Exam extends Model
     {
         return $this->belongsTo(Course::class);
     }
+    // Exam.php
+public function questions()
+{
+    return $this->hasMany(ExamQuestion::class);
+}
 }

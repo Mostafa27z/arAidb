@@ -12,6 +12,7 @@ class ClubMember extends Model
     protected $fillable = [
         'student_id',
         'club_id',
+        'status'
     ];
 
     public function student()

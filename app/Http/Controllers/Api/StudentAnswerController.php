@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\StudentAnswerResource;
 use App\Models\StudentAnswer;
+use App\Models\Question;
 use Illuminate\Http\Request;
 
 class StudentAnswerController extends Controller
@@ -26,27 +27,55 @@ class StudentAnswerController extends Controller
             ]
         ]);
     }
+    public function getAnswersForLesson($studentId, $lessonId)
+{
+    $answers = \App\Models\StudentAnswer::where('student_id', $studentId)
+        ->whereHas('question', function ($query) use ($lessonId) {
+            $query->where('lesson_id', $lessonId);
+        })
+        ->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => $answers
+    ]);
+}
+
 
     /**
      * Store a newly created student answer.
      */
     public function store(Request $request)
-    {
-        $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'question_id' => 'required|exists:questions,id',
-            'selected_option_id' => 'nullable|exists:question_options,id',
-            'essay_answer' => 'nullable|string',
-            'is_correct' => 'nullable|boolean',
+{
+    // ... تخزين إجابة الطالب
+
+    $studentId = $request->student_id;
+    $lessonId = $request->lesson_id;
+
+    // تحقّق هل أجاب على كل أسئلة الدرس
+    $totalQuestions = Question::where('lesson_id', $lessonId)->count();
+    $answered = StudentAnswer::where('student_id', $studentId)
+                              ->whereHas('question', fn($q) => $q->where('lesson_id', $lessonId))
+                              ->count();
+
+    if ($totalQuestions > 0 && $answered >= $totalQuestions) {
+        $progress = LessonProgress::firstOrNew([
+            'student_id' => $studentId,
+            'lesson_id' => $lessonId,
         ]);
 
-        $answer = StudentAnswer::create($request->all());
-
-        return response()->json([
-            'status' => 201,
-            'data' => new StudentAnswerResource($answer),
-        ], 201);
+        $progress->progress_percentage = 100;
+        $progress->status = 'completed';
+        $progress->completed_at = now();
+        $progress->save();
     }
+
+    return response()->json([
+        'status' => 201,
+        'message' => 'Answer saved successfully',
+    ]);
+}
+
 
     /**
      * Display the specified student answer.

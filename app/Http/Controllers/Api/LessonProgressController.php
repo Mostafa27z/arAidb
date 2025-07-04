@@ -100,4 +100,14 @@ class LessonProgressController extends Controller
             'message' => 'Lesson progress deleted successfully'
         ], 200);
     }
+    public function getByStudent($studentId)
+{
+    $progress = LessonProgress::where('student_id', $studentId)->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => LessonProgressResource::collection($progress)
+    ]);
+}
+
 }

@@ -21,4 +21,12 @@ class Group extends Model
     {
         return $this->belongsTo(Teacher::class);
     }
+    public function members()
+{
+    return $this->hasMany(GroupMember::class);
+}
+public function sessions()
+    {
+        return $this->hasMany(\App\Models\GroupSession::class); // غيّر اسم Session لو مختلف
+    }
 }

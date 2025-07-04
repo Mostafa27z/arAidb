@@ -55,17 +55,19 @@ class ExamResultController extends Controller
      * Get results by student ID
      */
     public function getResultsByStudentId($studentId)
-    {
-        $results = ExamResult::where('student_id', $studentId)
-            ->with(['student', 'exam'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+{
+    $results = ExamResult::with(['exam'])
+        ->where('student_id', $studentId)
+        ->get()
+        ->filter(function ($result) {
+            return now()->gte($result->exam->end_time);
+        });
 
-        return response()->json([
-            'status' => 200,
-            'data'   => ExamResultResource::collection($results),
-        ]);
-    }
+    return response()->json([
+        'status' => 200,
+        'data' => ExamResultResource::collection($results)
+    ]);
+}
 
     /**
      * Get results by exam ID

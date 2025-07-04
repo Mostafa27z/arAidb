@@ -40,6 +40,17 @@ class GroupController extends Controller
             'data' => new GroupResource($group)
         ], 201);
     }
+public function getGroupsForStudent($studentId)
+{
+    $groups = Group::whereHas('members', function ($q) use ($studentId) {
+        $q->where('student_id', $studentId);
+    })->with(['sessions'])->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => GroupResource::collection($groups),
+    ]);
+}
 
     public function show(Group $group)
     {

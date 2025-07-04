@@ -232,30 +232,25 @@ class StudentController extends Controller
      * Update lesson progress
      */
     public function updateProgress(Request $request, Student $student, Lesson $lesson)
-    {
-        $request->validate([
-            'progress_percentage' => 'required|numeric|min:0|max:100',
-            'status' => 'required|in:not_started,in_progress,completed',
-        ]);
+{
+    $progress = LessonProgress::firstOrNew([
+        'student_id' => $student->id,
+        'lesson_id' => $lesson->id,
+    ]);
 
-        $progress = LessonProgress::updateOrCreate(
-            [
-                'student_id' => $student->id,
-                'lesson_id' => $lesson->id
-            ],
-            [
-                'progress_percentage' => $request->progress_percentage,
-                'status' => $request->status,
-                'completed_at' => $request->status === 'completed' ? now() : null,
-                'last_accessed' => now()
-            ]
-        );
-
-        return response()->json([
-            'status' => 200,
-            'data' => $progress
-        ], 200);
+    // ابدأ من 50% إذا لسه ما بدأش أو أقل من كده
+    if ($progress->progress_percentage < 50) {
+        $progress->progress_percentage = 50;
+        $progress->status = 'in_progress';
+        $progress->last_accessed = now();
+        $progress->save();
     }
+
+    return response()->json([
+        'status' => 200,
+        'data' => new LessonProgressResource($progress)
+    ]);
+}
 
     /**
      * Unenroll student from a course
@@ -373,6 +368,46 @@ public function assignToParent(Request $request)
     $student->save();
 
     return response()->json(['message' => 'تم ربط الطالب بنجاح'], 200);
+}
+public function coursesWithProgress(Student $student)
+{
+    $studentId = $student->id;
+
+    $courses = CourseEnrollment::with(['course.lessons'])
+        ->where('student_id', $studentId)
+        ->get()
+        ->map(function ($enrollment) use ($studentId) {
+            $course = $enrollment->course;
+            $lessons = $course->lessons;
+
+            $lessonIds = $lessons->pluck('id');
+            $progressRecords = \App\Models\LessonProgress::where('student_id', $studentId)
+                ->whereIn('lesson_id', $lessonIds)
+                ->get()
+                ->keyBy('lesson_id');
+
+            $total = $lessons->count();
+            $sumProgress = 0;
+
+            foreach ($lessons as $lesson) {
+                $sumProgress += $progressRecords[$lesson->id]->progress_percentage ?? 0;
+            }
+
+            $avgProgress = $total > 0 ? round($sumProgress / $total, 2) : 0;
+
+            return [
+                'course_id' => $course->id,
+                'title' => $course->title,
+                'description' => $course->description,
+                'total_lessons' => $total,
+                'progress' => $avgProgress,
+            ];
+        });
+
+    return response()->json([
+        'status' => 200,
+        'data' => $courses
+    ]);
 }
 
 
