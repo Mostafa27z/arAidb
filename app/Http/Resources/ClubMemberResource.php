@@ -15,11 +15,13 @@ class ClubMemberResource extends JsonResource
                 'id' => $this->student->id,
                 'name' => $this->student->name,
             ],
+            'status'=> $this->status
+            ,
             'club' => [
                 'id' => $this->club->id,
                 'name' => $this->club->name,
             ],
-            'joined_at' => $this->created_at->toDateTimeString(),
+            'joined_at' => $this->updated_at->toDateTimeString(),
         ];
     }
 }

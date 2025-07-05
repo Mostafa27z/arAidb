@@ -52,12 +52,27 @@ class CourseEnrollmentController extends Controller
         return $this->successResponse(new CourseEnrollmentResource($enrollment));
     }
 
-    public function destroy(CourseEnrollment $enrollment)
-    {
-        $enrollment->delete();
+    // app/Http/Controllers/Api/EnrollmentController.php
 
-        return $this->successResponse(null, null, 200, 'Enrollment deleted successfully');
+public function destroy($id)
+{
+    $enrollment = \App\Models\CourseEnrollment::find($id);
+
+    if (!$enrollment) {
+        return response()->json([
+            'status' => 404,
+            'message' => 'الاشتراك غير موجود'
+        ], 404);
     }
+
+    $enrollment->delete();
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'تم حذف الاشتراك بنجاح'
+    ]);
+}
+
 
     public function getByStudent($student_id)
     {

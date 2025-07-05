@@ -65,6 +65,8 @@ Route::prefix('clubs')->group(function () {
         Route::post('/', [ClubMemberController::class, 'store']);
         Route::get('/{clubMember}', [ClubMemberController::class, 'show']);
         Route::delete('/{clubMember}', [ClubMemberController::class, 'destroy']);
+        Route::put('/{id}/approve', [ClubMemberController::class, 'approve']);
+        Route::put('/{id}/reject', [ClubMemberController::class, 'reject']);
     });
 
     // Chat routes بعد الكل
@@ -96,6 +98,7 @@ Route::prefix('group-sessions')->group(function () {
     Route::post('/', [GroupSessionController::class, 'store']);
     Route::get('/group/{groupId}', [GroupSessionController::class, 'getByGroup']);
     Route::get('/by-group/{groupId}', [GroupSessionController::class, 'getByGroup']);
+    
 });
 
 
@@ -107,6 +110,8 @@ Route::prefix('groups')->group(function () {
     Route::put('/{group}', [GroupController::class, 'update']);   // Update group
     Route::delete('/{group}', [GroupController::class, 'destroy']); // Delete group
     Route::get('/student/{studentId}', [GroupController::class, 'getGroupsForStudent']);
+    Route::get('/available/{studentId}', [GroupController::class, 'availableForStudent']);
+
 
 });
 
@@ -192,7 +197,7 @@ Route::put('/enrollments/{enrollment}/status', [CourseEnrollmentController::clas
 Route::get('/enrollments/all', [CourseEnrollmentController::class, 'getAllEnrollments']);
 Route::get('/enrollments/student/{student_id}/all', [CourseEnrollmentController::class, 'getAllEnrollmentsByStudent']);
 Route::get('students/{student}/courses-with-progress', [StudentController::class, 'coursesWithProgress']);
-
+Route::delete('/enrollments/{id}', [CourseEnrollmentController::class, 'destroy']);
 // Lesson Routes
 Route::prefix('lessons')->group(function () { 
     // Static or fixed routes FIRST

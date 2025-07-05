@@ -40,6 +40,31 @@ class GroupController extends Controller
             'data' => new GroupResource($group)
         ], 201);
     }
+public function availableForStudent($studentId)
+{
+    // هات كل الجروبات مع علاقة العضوية (لو الطالب له عضوية فيها)
+    $groups = \App\Models\Group::with(['teacher', 'members' => function ($q) use ($studentId) {
+        $q->where('student_id', $studentId);
+    }])->get();
+
+    // عدل البيانات عشان ترجع مع حالة الانضمام
+    $data = $groups->map(function ($group) use ($studentId) {
+        $member = $group->members->first(); // لو ليه عضوية
+        return [
+            'id' => $group->id,
+            'title' => $group->title,
+            'description' => $group->description,
+            'teacher_name' => $group->teacher->user->name ?? 'غير معروف',
+            'membership_status' => $member->status ?? null // null معناها لسه ما قدمش
+        ];
+    });
+
+    return response()->json([
+        'status' => 200,
+        'data' => $data
+    ]);
+}
+
 public function getGroupsForStudent($studentId)
 {
     $groups = Group::whereHas('members', function ($q) use ($studentId) {

@@ -97,5 +97,30 @@ public function approve(Request $request, $id)
 
     return response()->json(['message' => 'تم قبول الطالب']);
 }
+// public function approve($id)
+// {
+//     $member = \App\Models\ClubMember::findOrFail($id);
+//     $member->status = 'approved';
+//     $member->save();
+
+//     return response()->json([
+//         'status' => 200,
+//         'message' => 'Membership approved successfully',
+//         'data' => $member,
+//     ]);
+// }
+
+public function reject($id)
+{
+    $member = \App\Models\ClubMember::findOrFail($id);
+    $member->status = 'rejected';
+    $member->save();
+
+    return response()->json([
+        'status' => 200,
+        'message' => 'Membership rejected successfully',
+        'data' => $member,
+    ]);
+}
 
 }
