@@ -12,6 +12,24 @@ class ExamResultController extends Controller
     {
         return ExamResultResource::collection(ExamResult::with(['student', 'exam'])->get());
     }
+public function getResultsByTeacher($teacherId)
+{
+    // Get all exams created by the teacher via course relationship
+    $examIds = \App\Models\Exam::whereHas('course.teachers', function ($q) use ($teacherId) {
+        $q->where('teacher_id', $teacherId);
+    })->pluck('id');
+
+    // Get all results for those exams
+    $results = \App\Models\ExamResult::whereIn('exam_id', $examIds)
+        ->with(['student.user', 'exam.course'])
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    return response()->json([
+        'status' => 200,
+        'data' => \App\Http\Resources\ExamResultResource::collection($results)
+    ]);
+}
 
     public function store(Request $request)
     {
@@ -29,7 +47,7 @@ class ExamResultController extends Controller
 
     public function show(ExamResult $examResult)
     {
-        return new ExamResultResource($examResult->load(['student', 'exam']));
+        return new ExamResultResource($examResult->load(['student.user', 'exam']));
     }
 
     public function update(Request $request, ExamResult $examResult)
@@ -75,7 +93,7 @@ class ExamResultController extends Controller
     public function getResultsByExamId($examId)
     {
         $results = ExamResult::where('exam_id', $examId)
-            ->with(['student', 'exam'])
+            ->with(['student.user', 'exam'])
             ->orderBy('score', 'desc')
             ->get();
 

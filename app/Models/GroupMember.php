@@ -12,6 +12,7 @@ class GroupMember extends Model
     protected $fillable = [
         'student_id',
         'group_id',
+        'status',
     ];
 
     public function student()

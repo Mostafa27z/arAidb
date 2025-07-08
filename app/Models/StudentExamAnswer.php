@@ -12,7 +12,7 @@ class StudentExamAnswer extends Model
     protected $fillable = [
         'student_id',
         'exam_id',
-        'question_id',
+        'exam_question_id',
         'selected_option_id',
         'essay_answer',
         'score',
@@ -29,13 +29,17 @@ class StudentExamAnswer extends Model
         return $this->belongsTo(Exam::class);
     }
 
-    public function question()
-    {
-        return $this->belongsTo(Question::class);
-    }
+    // App\Models\StudentExamAnswer.php
+
+public function question()
+{
+    return $this->belongsTo(ExamQuestion::class, 'exam_question_id');
+}
+
+
 
     public function selectedOption()
     {
-        return $this->belongsTo(QuestionOption::class, 'selected_option_id');
+        return $this->belongsTo(ExamQuestionOption::class, 'selected_option_id');
     }
 }

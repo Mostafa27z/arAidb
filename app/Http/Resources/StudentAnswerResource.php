@@ -12,7 +12,7 @@ class StudentAnswerResource extends JsonResource
         return [
             'id' => $this->id,
             'student_id' => $this->student_id,
-            'question_id' => $this->question_id,
+            'exam_question_id' => $this->question_id,
             'selected_option_id' => $this->selected_option_id,
             'essay_answer' => $this->essay_answer,
             'is_correct' => $this->is_correct,

@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\StudentExamAnswerController;
 use App\Http\Controllers\Api\GroupController;
 use App\Http\Controllers\Api\GroupSessionController;
 use App\Http\Controllers\Api\GroupMemberController;
+use App\Http\Controllers\Api\ExamQuestionController;
 Route::get('/', function () {
     return response()->json(['message' => 'Welcome to API'], 200);
 });
@@ -98,8 +99,9 @@ Route::prefix('group-sessions')->group(function () {
     Route::post('/', [GroupSessionController::class, 'store']);
     Route::get('/group/{groupId}', [GroupSessionController::class, 'getByGroup']);
     Route::get('/by-group/{groupId}', [GroupSessionController::class, 'getByGroup']);
-    
+    Route::delete('/{id}', [GroupSessionController::class, 'destroy']); // ✅ Route الحذف
 });
+
 
 
 
@@ -351,7 +353,7 @@ Route::prefix('exam-results')->group(function () {
     Route::get('/student/{studentId}/all', [ExamResultController::class, 'getResultsByStudentId']);
     Route::get('/student/{studentId}/performance', [ExamResultController::class, 'getStudentPerformanceSummary']);
     Route::get('/student/{studentId}/recent', [ExamResultController::class, 'getStudentRecentResults']);
-
+Route::get('/teacher/{teacherId}/all', [ExamResultController::class, 'getResultsByTeacher']);
     // Exam-specific routes
     Route::get('/exam/{examId}/all', [ExamResultController::class, 'getResultsByExamId']);
     Route::get('/exam/{examId}/statistics', [ExamResultController::class, 'getExamStatistics']);
@@ -395,6 +397,17 @@ Route::prefix('exam-answers')->group(function () {
     Route::post('/', [StudentExamAnswerController::class, 'store']); // Submit multiple answers
     Route::get('/exam/{examId}/student/{studentId}', [StudentExamAnswerController::class, 'getAnswersForExam']); // For teacher review
     Route::put('/{id}/score', [StudentExamAnswerController::class, 'updateScore']); // Update score for essay
+    
+    Route::get('/exam/{examId}/students', [StudentExamAnswerController::class, 'getStudentsWhoAnswered']);
+
+});
+
+
+Route::prefix('exam-questions')->group(function () {
+    Route::get('/exam/{examId}', [ExamQuestionController::class, 'index']);   // عرض كل الأسئلة لامتحان
+    Route::post('/', [ExamQuestionController::class, 'store']);               // إنشاء سؤال
+    Route::put('/{id}', [ExamQuestionController::class, 'update']);          // تعديل سؤال
+    Route::delete('/{id}', [ExamQuestionController::class, 'destroy']);      // حذف سؤال
 });
 
 RateLimiter::for('api', function (Request $request) {

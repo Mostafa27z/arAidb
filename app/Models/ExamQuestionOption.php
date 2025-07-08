@@ -17,6 +17,6 @@ class ExamQuestionOption extends Model
 
     public function question()
     {
-        return $this->belongsTo(ExamQuestion::class, 'question_id');
+        return $this->belongsTo(ExamQuestion::class, 'exam_question_id');
     }
 }

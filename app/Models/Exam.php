@@ -8,7 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class Exam extends Model
 {
     use HasFactory;
-
+    
+protected $fillable = [
+        'course_id',
+        'title',
+        'exam_date', // 'mcq' or 'essay'
+        'start_time',
+        'end_time'
+    ];
     // Define the table associated with the model
     protected $table = 'exams';
 

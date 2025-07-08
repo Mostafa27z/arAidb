@@ -22,11 +22,11 @@ class ExamQuestion extends Model
 
     public function options()
     {
-        return $this->hasMany(ExamQuestionOption::class, 'question_id');
+        return $this->hasMany(ExamQuestionOption::class, 'exam_question_id');
     }
 
     public function studentAnswers()
     {
-        return $this->hasMany(StudentExamAnswer::class, 'question_id');
+        return $this->hasMany(StudentExamAnswer::class, 'exam_question_id');
     }
 }

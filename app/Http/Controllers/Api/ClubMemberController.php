@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\ClubMemberResource;
 use App\Models\ClubMember;
 use Illuminate\Http\Request;
-
+use App\Models\Club;
 class ClubMemberController extends Controller
 {
     /**
@@ -67,22 +67,25 @@ class ClubMemberController extends Controller
     /**
      * Delete a club member.
      */
-    public function destroy(Club $club)
+   public function destroy($id)
 {
-    // حذف الرسائل المرتبطة بالنادي أولاً
-    $club->chatMessages()->delete();
+    $member = \App\Models\ClubMember::find($id);
 
-    // حذف الأعضاء المرتبطين بالنادي (لو موجودين)
-    $club->members()->delete();
+    if (!$member) {
+        return response()->json([
+            'status' => 404,
+            'message' => 'العضو غير موجود'
+        ], 404);
+    }
 
-    // ثم حذف النادي نفسه
-    $club->delete();
+    $member->delete();
 
     return response()->json([
         'status' => 200,
-        'message' => 'Club deleted successfully.',
-    ], 200);
+        'message' => 'تم حذف العضو بنجاح'
+    ]);
 }
+
 public function approve(Request $request, $id)
 {
     $member = ClubMember::findOrFail($id);

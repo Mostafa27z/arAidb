@@ -127,7 +127,7 @@ public function getAvailableExamsForStudent($studentId)
      */
    public function getExamsByTeacher($teacherId)
 {
-    $exams = Exam::whereHas('course.teachers', function ($q) use ($teacherId) {
+    $exams = Exam::whereHas('course.teacher', function ($q) use ($teacherId) {
         $q->where('teacher_id', $teacherId);
     })
     ->with('course')
@@ -147,8 +147,7 @@ public function getAvailableExamsForStudent($studentId)
      */
     public function getUpcomingExams()
     {
-        $exams = Exam::where('exam_date', '>=', now())
-            ->with('course')
+        $exams = Exam::with('course')
             ->orderBy('exam_date', 'asc')
             ->get();
 
@@ -159,7 +158,7 @@ public function getAvailableExamsForStudent($studentId)
     }
 public function getExamsNeedingGrading($teacherId)
 {
-    $exams = Exam::whereHas('course.teachers', function ($q) use ($teacherId) {
+    $exams = Exam::whereHas('course.teacher', function ($q) use ($teacherId) {
         $q->where('teacher_id', $teacherId);
     })
     ->whereHas('questions', function ($q) {

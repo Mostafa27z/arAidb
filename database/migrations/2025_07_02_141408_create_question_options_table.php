@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('exam_question_options', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('question_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('exam_question_id')->constrained()->cascadeOnDelete();
             $table->string('option_text');
             $table->boolean('is_correct')->default(false); // ✅ لتمييز الإجابة الصحيحة
             $table->timestamps();
